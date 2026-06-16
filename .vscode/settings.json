@@ -1,0 +1,6 @@
+{
+    "totvsLanguageServer.welcomePage": false,
+    "totvsLanguageServer.editor.linter.includes": "C:/TOTVS12/Protheus2310/Protheus/include",
+    "advpl.debug_multiThread": true,
+    "totvsLanguageServer.workspaceServerConfig": false
+}

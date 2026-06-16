@@ -1,0 +1,123 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "Debug WEBSERV TESTE",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"enableMultiThread": true
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER PRD SA",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.250:8031"
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDD_2410_API_REST",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"enableMultiThread": true
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER DESENV REST PRD",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.250:8075",
+			"enableMultiThread": true
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER PRD VRN SCHEDULE",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.62:8025"
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER PRD VRM",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.62:8022"
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER VRN TESTE",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.135:8034"
+		},
+		{
+			"type": "totvs_language_web_debug",
+			"request": "launch",
+			"name": "BUDDEMEYER HML SA",
+			"program": "${command:AskForProgramName}",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"smartclientUrl": "http://192.168.1.76:8031"
+		}
+	],
+	"lastPrograms": [
+		{
+			"label": "SIGAMDI"
+		},
+		{
+			"label": "APSDU"
+		},
+		{
+			"label": "SIGACFG"
+		},
+		{
+			"args": [],
+			"label": "U_TXAD6652"
+		},
+		{
+			"label": "aa"
+		},
+		{
+			"label": "aaa"
+		},
+		{
+			"label": "adada"
+		},
+		{
+			"label": "ll"
+		},
+		{
+			"args": [],
+			"label": "U_ZZVAZA9"
+		},
+		{
+			"label": "U_zExe333"
+		},
+		{
+			"label": "SIGAESP"
+		},
+		{
+			"label": "APSDI"
+		},
+		{
+			"label": "SIGAEST"
+		}
+	],
+	"lastProgramExecuted": "SIGACFG",
+	"lastProgramArguments": []
+}
