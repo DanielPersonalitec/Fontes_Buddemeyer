@@ -1,0 +1,881 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace logs
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Logs                                                     !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Logs                                                     !
+! Data       ! 15-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface LogInterface
+Public Method New()
+
+Public Method getData() as Character
+Public Method getPedido() as Character
+Public Method getStatus() as Character
+Public Method getCNumQuery() as Character
+//romaneio
+Public Method getNUMROM() as Character
+Public Method getCOD() as Character
+Public Method getDESC() as Character
+Public Method getLOCAL() as Character
+Public Method getCODBAR() as Character
+Public Method getUM() as Character
+Public Method getQTDPCT() as Numeric
+Public Method getZCQ_MULT() as Numeric
+Public Method getItemGuia() as Character
+Public Method getQtdEstoque() as Numeric
+Public Method getQtdVend() as Numeric
+//pedido
+Public Method getItem() as Character
+Public Method getQtdCan() as Character
+Public Method getQtd() as Character
+
+Public Method setData(c)
+Public Method setPedido(c)
+Public Method setStatus(c)
+Public Method setCNumQuery(c)
+//romaneio
+Public Method setNUMROM(c)
+Public Method setCOD(c)
+Public Method setDESC(c)
+Public Method setLOCAL(c)
+Public Method setCODBAR(c)
+Public Method setUM(c)
+Public Method setQTDPCT(c)
+Public Method setZCQ_MULT(c)
+Public Method setItemGuia(c)
+Public Method setQtdEstoque(n)
+Public Method setQtdVend(n)
+//pedido
+Public Method setItem(c)
+Public Method setQtdCan(c)
+Public Method setQtd(c)
+
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+Interface IncluirInterface
+Public Method New()
+Public Method incluir()
+Public Method incluirPed()
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Log Implements LogInterface
+
+    Private data cData as Character
+    Private data cPedido as Character
+    Private data cStatus as Character
+    Private data cCNumQuery as Character
+    //romaneio
+    Private data cNumRom as Character
+    Private data cCod as Character
+    Private data cDesc as Character
+    Private data cLocal as Character
+    Private data cCodBar as Character
+    Private data cUm as Character
+    Private data cQtdpct as Numeric
+    Private data cMult as Numeric
+    Private data aItens as array
+    Private data cItemGuia as Character
+    Private data nQtdEstoque as Numeric
+    Private data nQtdVend as Numeric
+    //pedido
+    Private data cItem as Character
+    Private data cQtdCan as Character
+    Private data cQtd as Character
+
+    Public Method New()
+
+    Public Method getData() as Character
+    Public Method getPedido() as Character
+    Public Method getStatus() as Character
+    Public Method getCNumQuery() as Character
+    //romaneio
+    Public Method getNUMROM() as Character
+    Public Method getCOD() as Character
+    Public Method getDESC() as Character
+    Public Method getLOCAL() as Character
+    Public Method getCODBAR() as Character
+    Public Method getUM() as Character
+    Public Method getQTDPCT() as Numeric
+    Public Method getZCQ_MULT() as Numeric
+    Public Method getItemGuia() as Character
+    Public Method getQtdEstoque() as Numeric
+    Public Method getQtdVend() as Numeric
+
+    //pedido
+    Public Method getItem() as Character
+    Public Method getQtdCan() as Character
+    Public Method getQtd() as Character
+
+    Public Method setData(c)
+    Public Method setPedido(c)
+    Public Method setStatus(c)
+    Public Method setCNumQuery(c)
+    //romaneio
+    Public Method setNUMROM(c)
+    Public Method setCOD(c)
+    Public Method setDESC(c)
+    Public Method setLOCAL(c)
+    Public Method setCODBAR(c)
+    Public Method setUM(c)
+    Public Method setQTDPCT(c)
+    Public Method setZCQ_MULT(c)
+    Public Method setItemGuia(c)
+    Public Method setQtdEstoque(n)
+    Public Method setQtdVend(n)
+    //pedido
+    Public Method setItem(c)
+    Public Method setQtdCan(c)
+    Public Method setQtd(c)
+
+    Public Method dados() as Logical
+
+EndClass
+
+Class Consultar From Log Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_logs/consultar/:pedido/:status/:numrom/:cnumquery")
+    Public Method consultar() as Logical
+
+EndClass
+
+Class Incluir From Log Implements IncluirInterface
+    Public Method New()
+
+    @Post("api_logs/incluir")
+    Public Method incluir()
+
+    @Post("api_logs/incluirzcu")
+    Public Method incluirPed()
+EndClass
+
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Produto
+Method New() class Log
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+Method New() class Incluir
+Return self
+
+// Metodos GETs
+
+Method getData() as Character class Log
+Return ::cData
+Method getPedido() as Character class Log
+Return ::cPedido
+Method getStatus() as Character class Log
+Return ::cStatus
+Method getCNumQuery() as Character class Log
+Return ::cCNumQuery
+
+//romaneio
+Method getNUMROM() as Character class Log
+Return ::cNumRom
+Method getCOD() as Character class Log
+Return ::cCod
+Method getDESC() as Character class Log
+Return ::cDesc
+Method getLOCAL() as Character class Log
+Return ::cLocal
+Method getCODBAR() as Character class Log
+Return ::cCodBar
+Method getUM() as Character class Log
+Return ::cUm
+Method getQTDPCT() as Numeric class Log
+Return ::cQtdpct
+Method getZCQ_MULT() as Numeric class Log
+Return ::cMult
+Method getItemGuia() as Character class Log
+Return ::cItemGuia
+Method getQtdEstoque() as Numeric class Log
+Return ::nQtdEstoque
+Method getQtdVend() as Numeric class Log
+Return ::nQtdVend
+
+
+//pedido
+Method getItem() as Character class Log
+Return ::cItem
+Method getQtdCan() as Character class Log
+Return ::cQtdCan
+Method getQtd() as Character class Log
+Return ::cQtd
+
+// Metodos SETs
+Method setData(c) class Log
+    ::cData := AllTrim(c)
+Return
+
+Method setPedido(c) class Log
+    ::cPedido := AllTrim(c)
+Return
+
+Method setStatus(c) class Log
+    ::cStatus := AllTrim(c)
+Return
+
+Method setCNumQuery(c) class Log
+    ::cCNumQuery := AllTrim(c)
+Return
+
+//romaneio
+Method setNUMROM(c) class Log
+    ::cNumRom:= AllTrim(c)
+Return
+Method setCOD(c) class Log
+    ::cCod:= AllTrim(c)
+Return
+Method setDESC(c) class Log
+    ::cDesc:= AllTrim(c)
+Return
+Method setLOCAL(c) class Log
+    ::cLocal:= AllTrim(c)
+Return
+Method setCODBAR(c) class Log
+    ::cCodBar:= AllTrim(c)
+Return
+Method setUM(c) class Log
+    ::cUm:= AllTrim(c)
+Return
+Method setQTDPCT(c) class Log
+    ::cQtdpct:= c
+Return
+Method setZCQ_MULT(c) class Log
+    ::cMult:= c
+Return
+Method setItemGuia(c) class Log
+    ::cItemGuia := AllTrim(c)
+Return
+Method setQtdEstoque(n) class Log
+    ::nQtdEstoque := n
+Return
+Method setQtdVend(n) class Log
+    ::nQtdVend := n
+Return
+
+
+//pedidos
+
+Method setItem(c) class Log
+    ::cItem := AllTrim(c)
+Return
+
+Method setQtdCan(c) class Log
+    ::cQtdCan := AllTrim(c)
+Return
+
+Method setQtd(c) class Log
+    ::cQtd := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do produto                   |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 15/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Log
+    Local cCNumQuery   := ::getCNumQuery() as Character
+    Local cPedido  := ::getPedido() as Character
+    Local cStatus  := ::getStatus() as Character
+    Local cNumRom := ::getNUMROM() as Character
+    Local lRetorno := .F. as Logical
+
+    // Busco o LOG
+    If (Select("BLOG") <> 0)
+        dbSelectArea("BLOG")
+        dbCloseArea()
+    EndIf
+
+    If cCNumQuery == "01"
+        BeginSql alias 'BLOG'
+            SELECT
+                DISTINCT TOP 1 ZC2_DATA
+            FROM
+                %Table:ZC2% (NOLOCK)
+            WHERE
+                ZC2_FILIAL = %xFilial:ZC2% 
+                AND ZC2_USUARI = "WORKFLOW" // fixo workflow
+                AND ZC2_PEDIDO = %Exp:cPedido%
+                AND ZC2_STATUS = %Exp:cStatus%
+                AND %notDel%
+        EndSql
+    ELSEIF cCNumQuery == "02"
+        BeginSql alias 'BLOG'
+            SELECT
+                ZCQ.ZCQ_NUMROM,
+                SB1.B1_COD,
+                SB1.B1_DESC,
+                ZCQ.ZCQ_LOCAL,
+                SB1.B1_CODBAR,
+                SB1.B1_UM,
+                SZ7.Z7_QTDPCT,
+                SUM(ZCQ.ZCQ_MULT) AS ZCQ_MULT
+            FROM
+                %Table:ZCQ% (NOLOCK) ZCQ
+            INNER JOIN %Table:SB1% (NOLOCK) SB1
+            ON (
+                    SB1.B1_FILIAL = %xFilial:SB1%
+                    AND SB1.B1_CODBAR = ZCQ.ZCQ_CODIGO
+                    AND SB1.%notDel%
+                )
+            LEFT JOIN SZ7010 (NOLOCK) SZ7
+            ON (
+                    SZ7.Z7_FILIAL = %xFilial:SZ7%
+                    AND SZ7.Z7_COD = SB1.B1_CODMOD
+                    AND SZ7.%notDel%
+                )
+            WHERE
+                ZCQ.ZCQ_FILIAL = %xFilial:ZC2%
+                AND ZCQ.ZCQ_NUMROM = %Exp:cNumRom%
+                AND ZCQ.ZCQ_TIPOMV = 'R'
+                AND ZCQ.%notDel%
+            GROUP BY
+                ZCQ.ZCQ_NUMROM,
+                SB1.B1_COD,
+                SB1.B1_DESC,
+                ZCQ.ZCQ_LOCAL,
+                SB1.B1_CODBAR,
+                SB1.B1_UM,
+                SZ7.Z7_QTDPCT
+        EndSql
+
+    ELSEIF cCNumQuery == "03"
+
+        IF (substr(cPedido, 0, 2) == 'NP')
+            BeginSql alias 'BLOG'
+                SELECT
+                    DISTINCT C5_NUM,
+                    C6_ITEM,
+                    B1_COD,
+                    B1_CODBAR,
+                    B1_UM,
+                    B1_DESC,
+                    B2_LOCAL,
+                    Z7_QTDPCT,
+                    (C6_QTDVEN - C6_QTDCANC) AS C6_QTDVEN,
+                    ISNULL((B2_QATU - B2_QEMP - B2_AEMPENH - B2_RESERVA), 0) AS ESTOQUE
+                FROM
+                    %Table:SC5% SC5 (NOLOCK)
+                INNER JOIN SC6010 SC6 (NOLOCK)
+                ON SC6.C6_FILIAL = SC5.C5_FILIAL
+                    AND SC6.C6_NUM = SC5.C5_NUM
+                    AND SC6.D_E_L_E_T_ = ''
+                INNER JOIN %Table:SB1% SB1 (NOLOCK)
+                ON SB1.B1_FILIAL = %xFilial:SB1%
+                    AND SB1.B1_COD = SC6.C6_PRODUTO
+                    AND SB1.D_E_L_E_T_ = ''
+                LEFT JOIN %Table:SZ7% SZ7 (NOLOCK)
+                ON SZ7.Z7_FILIAL = %xFilial:SZ7%
+                    AND SZ7.Z7_COD = SB1.B1_CODMOD
+                    AND SZ7.D_E_L_E_T_ = ''
+                INNER JOIN %Table:SA1% SA1 (NOLOCK)
+                ON SA1.A1_FILIAL = %xFilial:SA1%
+                    AND SA1.A1_COD = SC5.C5_CLIENTE
+                    AND SA1.A1_LOJA = SC5.C5_LOJACLI
+                    AND SA1.D_E_L_E_T_ = ''
+                LEFT JOIN %Table:SB2% SB2 (NOLOCK)
+                ON SB2.B2_FILIAL = %xFilial:SB2%
+                    AND SB2.B2_COD = SB1.B1_COD
+                    AND SB2.B2_LOCAL = SC6.C6_LOCAL
+                    AND SB2.B2_QATU > 0
+                    AND SB2.D_E_L_E_T_ = ''
+                WHERE
+                    SC5.C5_FILIAL = %xFilial:SC5%
+                    AND SC5.C5_NUM = %exp:cPedido%
+                    AND LEFT(SC5.C5_NUM, 2) = 'NP'
+                    AND (SC6.C6_QTDVEN - SC6.C6_QTDCANC - SC6.C6_QTDENT) > 0
+                    AND SC5.D_E_L_E_T_ = ''
+            ENDSQL
+        ELSE
+            BEGINSQL ALIAS "BLOG"
+                SELECT
+                    DISTINCT SC5.C5_NUM,
+                    SC6.C6_ITEM,
+                    SB1.B1_COD,
+                    SB1.B1_CODBAR,
+                    SB1.B1_UM,
+                    SB1.B1_DESC,
+                    SB2.B2_LOCAL,
+                    SZ7.Z7_QTDPCT,
+                    (SC6.C6_QTDVEN - SC6.C6_QTDCANC) AS C6_QTDVEN,
+                    ISNULL(
+                        (
+                            SB2.B2_QATU - SB2.B2_QEMP - SB2.B2_AEMPENH - SB2.B2_RESERVA
+                        ),
+                        0
+                    ) AS ESTOQUE
+                FROM
+                    %Table:SC5% SC5 (NOLOCK)
+                INNER JOIN %Table:SC6% SC6 (NOLOCK)
+                ON SC6.C6_FILIAL = SC5.C5_FILIAL
+                    AND SC6.C6_NUM = SC5.C5_NUM
+                    AND SC6.D_E_L_E_T_ = ''
+                INNER JOIN %Table:SB1% SB1 (NOLOCK)
+                ON SB1.B1_FILIAL = %xFilial:SB1%
+                    AND SB1.B1_COD = SC6.C6_PRODUTO
+                    AND SB1.D_E_L_E_T_ = ''
+                LEFT JOIN %Table:SZ7% SZ7 (NOLOCK)
+                ON SZ7.Z7_FILIAL = %xFilial:SZ7%
+                    AND SZ7.Z7_COD = SB1.B1_CODMOD
+                    AND SZ7.D_E_L_E_T_ = ''
+                INNER JOIN %Table:SA1% SA1 (NOLOCK)
+                ON SA1.A1_FILIAL = %xFilial:SA1%
+                    AND SA1.A1_COD = SC5.C5_CLIENTE
+                    AND SA1.A1_LOJA = SC5.C5_LOJACLI
+                    AND SA1.D_E_L_E_T_ = ''
+                LEFT JOIN %Table:SB2% SB2 (NOLOCK)
+                ON SB2.B2_FILIAL = %xFilial:SB2%
+                    AND SB2.B2_COD = SB1.B1_COD
+                    AND SB2.B2_LOCAL IN ('04', '06')
+                    AND SB2.B2_QATU > 0
+                    AND SB2.D_E_L_E_T_ = ''
+                WHERE
+                    SC5.C5_FILIAL = %xFilial:SC5%
+                    AND SC5.C5_NUM = %exp:cPedido%
+                    AND SC5.C5_TIPOCLI = 'X'
+                    AND LEFT(SC5.C5_NUM, 2) <> 'NP'
+                    AND (SC6.C6_QTDVEN - SC6.C6_QTDCANC - SC6.C6_QTDENT) > 0
+                    AND SC5.D_E_L_E_T_ = ''
+            ENDSQL
+
+        ENDIF
+
+    endif
+
+    // Se existir o produto
+    If !BLOG->(Eof())
+        If cCNumQuery == "01"
+            ::setData(BLOG->ZC2_DATA)
+        ELSEIF cCNumQuery == "02"
+            While BLOG->(!eof())
+                jJsonItem := JsonObject():New()
+                ::setNUMROM(BLOG->ZCQ_NUMROM)
+                ::setCOD(BLOG->B1_COD)
+                ::setDESC(BLOG->B1_DESC)
+                ::setLOCAL(BLOG->ZCQ_LOCAL)
+                ::setCODBAR(BLOG->B1_CODBAR)
+                ::setUM(BLOG->B1_UM)
+                ::setQTDPCT(BLOG->Z7_QTDPCT)
+                ::setZCQ_MULT(BLOG->ZCQ_MULT)
+
+                jJsonItem['message'] := "Registro encontrado."
+                jJsonItem['code'] := 200
+                jJsonItem['romaneio'] := ::getNUMROM()
+                jJsonItem['produto'] := ::getCOD()
+                jJsonItem['descricao'] := ::getDESC()
+                jJsonItem['local'] := ::getLOCAL()
+                jJsonItem['codbar'] := ::getCODBAR()
+                jJsonItem['unidmed'] := ::getUM()
+                jJsonItem['qtdpcs'] := ::getQTDPCT()
+                jJsonItem['multiplo'] := ::getZCQ_MULT()
+
+                aAdd(oRetorno["retorno"], jJsonItem)
+
+                BLOG->(dbskip())
+            enddo
+            BLOG->(DbCloseArea())
+        ELSEIF cCNumQuery == "03"
+            While BLOG->(!eof())
+
+                jJsonItem := JsonObject():New()
+                ::setPedido(BLOG->C5_NUM)
+                ::setItemGuia(BLOG->C6_ITEM)
+                ::setCOD(BLOG->B1_COD)
+                ::setCODBAR(BLOG->B1_CODBAR)
+                ::setUM(BLOG->B1_UM)
+                ::setDESC(BLOG->B1_DESC)
+                ::setLOCAL(BLOG->B2_LOCAL)
+                ::setQTDPCT(BLOG->Z7_QTDPCT)
+                ::setQtdVend(BLOG->C6_QTDVEN)
+                ::setQtdEstoque(BLOG->ESTOQUE)
+
+                jJsonItem['message'] := "Registro encontrado."
+                jJsonItem['code'] := 200
+                jJsonItem['pedido'] := ::getPedido()
+                jJsonItem['item'] := ::getItemGuia()
+                jJsonItem['cod'] := ::getCOD()
+                jJsonItem['codBar'] := ::getCODBAR()
+                jJsonItem['um'] := ::getUM()
+                jJsonItem['desc'] := ::getDESC()
+                jJsonItem['local'] := ::getLOCAL()
+                jJsonItem['qtdpcs'] := ::getQTDPCT()
+                jJsonItem['qtdvend'] := ::getQtdVend()
+                jJsonItem['qtdestoq'] := ::getQtdEstoque()
+
+                aAdd(oRetorno["retorno"], jJsonItem)
+
+                BLOG->(dbskip())
+            enddo
+        endif
+        lRetorno := .T.
+    EndIf
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de logs                                      !
+! Data       ! 15-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["pedido"])) .AND.  AllTrim(jPathParams["cnumquery"]) $ "01|03"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: pedido"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(AllTrim(jPathParams["status"])) .AND. AllTrim(jPathParams["cnumquery"]) == "01"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: status"
+            jJsonItem['code'] := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 5
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIf Empty(AllTrim(jPathParams["numrom"])) .AND. AllTrim(jPathParams["cnumquery"]) == "02"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: numrom"
+            jJsonItem['code'] := 6
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+            ::setPedido(jPathParams["pedido"])
+            ::setStatus(jPathParams["status"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+            ::setNUMROM(jPathParams["numrom"])
+
+            lRetorno := ::dados()
+
+            If lRetorno
+                jJsonItem['message'] := "Registro encontrado."
+                jJsonItem['code'] := 200
+                IF  ::getCNumQuery() == "01"
+                    jJsonItem['data'] := ::getData()
+                endif
+
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 4
+            EndIf
+
+            aAdd(oRetorno["retorno"], jJsonItem)
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+
+
+/*
+/==================================================================================\
+|Nome              : Incluir log na tabela ZC2                                     |
+|==================================================================================|
+|Descricao         : Este metodo inclui log na tabela ZC2                          |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 18/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method incluir()  class Incluir
+
+    // Declara variaveis
+    Local cHr := SubStr(Time(), 1, 5) as Character
+    Local cBody := "" as Character
+    Local cPed := "" as Character
+    Local cStt := "" as Character
+
+    Local oBody := JsonObject():new()
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    cBody := oRest:getBodyRequest()
+
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    If !oBody:HasProperty("pedido")
+        jJsonItem['message'] := "O campo (pedido) nao foi informado!"
+        jJsonItem['code'] := 1
+        Aadd(oRetorno["retorno"], jJsonItem)
+    ElseIf !oBody:HasProperty("status")
+        jJsonItem['message'] := "O campo (status) nao foi informado!"
+        jJsonItem['code'] := 2
+        Aadd(oRetorno["retorno"], jJsonItem)
+
+    else
+        // Recebe as informacoes
+        ::setPedido(oBody["pedido"])
+        ::setStatus(oBody["status"])
+
+        cPed := ::getPedido()
+        cStt := ::getStatus()
+
+        jJsonItem := JsonObject():New()
+
+        If Empty(::getPedido())
+            jJsonItem['code'] := 3
+            jJsonItem['message'] := "Nao foi possivel identificar o pedido!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(::getStatus())
+            jJsonItem['code'] := 4
+            jJsonItem['message'] := "Nao foi possivel identificar o status!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ELSE
+            // Inclui o log na tabela ZC2
+            RecLock("ZC2", .T.)
+            ZC2->ZC2_DATA       := Date()
+            ZC2->ZC2_HORA       := cHr
+            ZC2->ZC2_USUARI     := "WORKFLOW" // fixo workflow
+            ZC2->ZC2_PEDIDO     := alltrim(cPed)
+            ZC2->ZC2_STATUS     := alltrim(cStt)
+            ZC2->(MsUnLock())
+
+            DBSelectArea("ZC2")
+            ZC2->(DBSetOrder(1))
+            If dbSeek(xFilial("ZC2") + DTOS(Date()) + cHr + padr("WORKFLOW",tamsx3("ZC2_USUARI")[1])  + padr(alltrim(cPed),tamsx3("ZC2_PEDIDO")[1]))
+                jJsonItem['code'] := 200
+                jJsonItem['message'] := "Log incluido com sucesso para o pedido: " + ZC2->ZC2_PEDIDO + " com status: " + alltrim(ZC2->ZC2_STATUS)
+                jJsonItem['data'] := ZC2->ZC2_DATA
+                jJsonItem['hora'] := ZC2->ZC2_HORA
+                jJsonItem['usuario'] := alltrim(ZC2->ZC2_USUARI)
+                jJsonItem['pedido'] := alltrim(ZC2->ZC2_PEDIDO)
+                jJsonItem['status'] := alltrim(ZC2->ZC2_STATUS)
+
+                // Adiciona status ao retorno
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ELSE
+                jJsonItem['message'] := "Log nao cadastrado!"
+                jJsonItem['code'] := 5
+                Aadd(oRetorno["retorno"], jJsonItem)
+
+            ENDIF
+
+        ENDIF
+
+    ENDIF
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return oRest
+
+
+
+/*
+/==================================================================================\
+|Nome              : Incluir log na tabela ZCU                                     |
+|==================================================================================|
+|Descricao         : Este metodo inclui log na tabela ZCU                          |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 22/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method incluirPed()  class Incluir
+
+    // Declara variaveis
+    Local cHr := SubStr(Time(), 1, 5) as Character
+    Local cBody := "" as Character
+    Local cPed := "" as Character
+    Local cItem := "" as Character
+
+    Local oBody := JsonObject():new()
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    cBody := oRest:getBodyRequest()
+
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    If !oBody:HasProperty("pedido")
+        jJsonItem['message'] := "O campo (pedido) nao foi informado!"
+        jJsonItem['code'] := 1
+        Aadd(oRetorno["retorno"], jJsonItem)
+    ElseIf !oBody:HasProperty("item")
+        jJsonItem['message'] := "O campo (item) nao foi informado!"
+        jJsonItem['code'] := 2
+        Aadd(oRetorno["retorno"], jJsonItem)
+    ElseIf !oBody:HasProperty("qtd")
+        jJsonItem['message'] := "O campo (qtd) nao foi informado!"
+        jJsonItem['code'] := 3
+        Aadd(oRetorno["retorno"], jJsonItem)
+    ElseIf !oBody:HasProperty("qtdcan")
+        jJsonItem['message'] := "O campo (qtdcan) nao foi informado!"
+        jJsonItem['code'] := 4
+        Aadd(oRetorno["retorno"], jJsonItem)
+    else
+        // Recebe as informacoes
+        ::setPedido(oBody["pedido"])
+        ::setItem(oBody["item"])
+        ::setQtdCan(oBody["qtdcan"])
+        ::setQtd(oBody["qtd"])
+
+        cPed := ::getPedido()
+        cItem := ::getItem()
+        cQtdCan := ::getQtdCan()
+        cQtd := ::getQtd()
+
+        jJsonItem := JsonObject():New()
+
+        If Empty(::getPedido())
+            jJsonItem['code'] := 5
+            jJsonItem['message'] := "Nao foi possivel identificar o pedido!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(::getItem())
+            jJsonItem['code'] := 6
+            jJsonItem['message'] := "Nao foi possivel identificar o item!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(::getQtdCan())
+            jJsonItem['code'] := 7
+            jJsonItem['message'] := "Nao foi possivel identificar a quantidade cancelada!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(::getQtd())
+            jJsonItem['code'] := 8
+            jJsonItem['message'] := "Nao foi possivel identificar a quantidade!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ELSE
+            // Inclui o log na tabela ZCU
+            RecLock("ZCU", .T.)
+            ZCU->ZCU_FILIAL     := '01'
+            ZCU->ZCU_NUMPED     := alltrim(cPed)
+            ZCU->ZCU_ITEM       := alltrim(cItem)
+            ZCU->ZCU_DATA       := Date()
+            ZCU->ZCU_HORA       := cHr
+            ZCU->ZCU_USUARI     := "WORKFLOW" // fixo workflow
+            ZCU->ZCU_CCAMPO          := 'C6_QTDCANC'
+            ZCU->ZCU_DCAMPO          := 'Qtd. Cancelada'
+            ZCU->ZCU_VALORI          := alltrim(cQtdCan)
+            ZCU->ZCU_VALNOV          := alltrim(cQtd)
+
+            ZCU->(MsUnLock())
+
+            DBSelectArea("ZCU")
+            ZCU->(DBSetOrder(1))
+            If dbSeek(xFilial("ZCU") + padr(alltrim(cPed),tamsx3("ZCU_NUMPED")[1])+ padr(alltrim(cItem),tamsx3("ZCU_ITEM")[1])+ DTOS(Date()) + cHr + padr("WORKFLOW",tamsx3("ZCU_USUARI")[1]))
+                jJsonItem['code'] := 200
+                jJsonItem['message'] := "Log incluido com sucesso para o pedido: " + AllTrim(ZCU->ZCU_NUMPED) + " item: " + ALLTRIM(ZCU->ZCU_ITEM)
+                jJsonItem['pedido'] := alltrim(ZCU->ZCU_NUMPED)
+                jJsonItem['item'] := alltrim(ZCU->ZCU_ITEM)
+                jJsonItem['data'] := ZCU->ZCU_DATA
+                jJsonItem['hora'] := ZCU->ZCU_HORA
+                jJsonItem['usuario'] := alltrim(ZCU->ZCU_USUARI)
+                jJsonItem['campo'] := alltrim(ZCU->ZCU_CCAMPO)
+                jJsonItem['dcampo'] := alltrim(ZCU->ZCU_DCAMPO)
+                jJsonItem['valori'] := alltrim(ZCU->ZCU_VALORI)
+                jJsonItem['valnovo'] := alltrim(ZCU->ZCU_VALNOV)
+
+                // Adiciona status ao retorno
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ELSE
+                jJsonItem['message'] := "Log nao cadastrado!"
+                jJsonItem['code'] := 9
+                Aadd(oRetorno["retorno"], jJsonItem)
+
+            ENDIF
+
+        ENDIF
+
+    ENDIF
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return oRest

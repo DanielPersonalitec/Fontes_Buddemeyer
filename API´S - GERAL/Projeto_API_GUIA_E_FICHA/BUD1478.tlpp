@@ -1,0 +1,205 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace operadores
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API CADASTRO DE OPERADORES           ANTIGO BUD1477          !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API CADASTRO DE OPERADORES                                   !
+! Data       ! 15-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface OperadorInterface
+Public Method New()
+
+Public Method getCodOper() as Character
+Public Method getNomeOper() as Character
+
+Public Method setCodOper(c)
+Public Method setNomeOper(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Operador Implements OperadorInterface
+
+    Private data cCodOper as Character
+    Private data cNomeOper as Character
+
+    Public Method New()
+
+    Public Method getCodOper() as Character
+    Public Method getNomeOper() as Character
+
+    Public Method setCodOper(c)
+    Public Method setNomeOper(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From Operador Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_operadores/consultar/:codoperador")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Operador
+Method New() class Operador
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCodOper() as Character class Operador
+Return ::cCodOper
+
+Method getNomeOper() as Character class Operador
+Return ::cNomeOper
+
+// Metodos SETs
+
+Method setCodOper(c) class Operador
+    ::cCodOper := AllTrim(c)
+Return
+
+Method setNomeOper(c) class Operador
+    ::cNomeOper := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do operador                  |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 15/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Operador
+
+    Local cCodOper := ::getCodOper() as Character
+    //Local cNomeOper := ::getNomeOper() as Character
+
+    Local lRetorno := .F. as Logical
+
+    // Busco o operador
+    If (Select("BOPERADOR") <> 0)
+        dbSelectArea("BOPERADOR")
+        dbCloseArea()
+    EndIf
+
+    BeginSql alias 'BOPERADOR'
+        SELECT
+            CB1.CB1_MATRIC,
+            CB1.CB1_NOME
+        FROM  %Table:CB1% (NOLOCK) CB1
+        WHERE CB1.CB1_FILIAL = %xFilial:CB1% //'01'
+        AND CB1.CB1_MATRIC = %Exp:cCodOper%
+        AND CB1.%notDel%
+    EndSql
+
+    // Se existir o operador
+    If !BOPERADOR->(Eof())
+        ::setNomeOper(BOPERADOR->CB1_NOME)
+        lRetorno := .T.
+    EndIf
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de operadores                                !
+! Data       ! 15-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["codoperador"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codoperador"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setCodOper(jPathParams["codoperador"])
+
+            lRetorno := ::dados()
+
+            If lRetorno
+                jJsonItem['message'] := "Registro encontrado."
+                jJsonItem['code'] := 200
+                jJsonItem['codoper'] := ::getCodOper()
+                jJsonItem['nome'] := ::getNomeOper()
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+            EndIf
+
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 3
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

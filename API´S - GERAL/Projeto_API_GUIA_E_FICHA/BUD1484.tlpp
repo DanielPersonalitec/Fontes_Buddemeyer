@@ -1,0 +1,279 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace movInternas
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Movimentações Internas                                   !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Movimentações Internas                                   !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface MovimentacaoInterface
+Public Method New()
+
+Public Method getDoc() as Character
+Public Method getCod() as Character
+Public Method getTm() as Character
+Public Method getCf() as Character
+Public Method getQtd() as Character
+
+Public Method setDoc(c)
+Public Method setCod(c)
+Public Method setTm(c)
+Public Method setCf(c)
+Public Method setQtd(n)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Movimentacao Implements MovimentacaoInterface
+
+    Private data cDoc as Character
+    Private data cCod as Character
+    Private data cTm as Character
+    Private data cCf as Character
+    Private data nQtd as Numeric
+
+    Public Method New()
+
+    Public Method getDoc() as Character
+    Public Method getCod() as Character
+    Public Method getTm() as Character
+    Public Method getCf() as Character
+    Public Method getQtd() as Numeric
+
+    Public Method setDoc(c)
+    Public Method setCod(c)
+    Public Method setTm(c)
+    Public Method setCf(c)
+    Public Method setQtd(n)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From Movimentacao Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_movint/consultar")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Movimentacao
+Method New() class Movimentacao
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getDoc() as Character class Movimentacao
+Return ::cDoc
+
+Method getCod() as Character class Movimentacao
+Return ::cCod
+
+Method getTm() as Character class Movimentacao
+Return ::cTm
+
+Method getCf() as Character class Movimentacao
+Return ::cCf
+
+Method getQtd() as Numeric class Movimentacao
+Return ::nQtd
+
+// Metodos SETs
+Method setDoc(c) class Movimentacao
+    ::cDoc := AllTrim(c)
+Return
+
+Method setCod(c) class Movimentacao
+    ::cCod := AllTrim(c)
+Return
+
+Method setTm(c) class Movimentacao
+    ::cTm := AllTrim(c)
+Return
+
+Method setCf(c) class Movimentacao
+    ::cCf := AllTrim(c)
+Return
+
+Method setQtd(n) class Movimentacao
+    ::nQtd := n
+Return
+
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do Movimentacao                  |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 15/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Movimentacao
+
+    Local dData    := DTOS(Date())
+
+    Local lRetorno := .F. as Logical
+
+    If (Select("MOVINT") <> 0)
+        dbSelectArea("MOVINT")
+        dbCloseArea()
+    EndIf
+
+    BeginSql alias 'MOVINT'
+        SELECT D3_DOC, D3_COD, D3_TM, D3_CF, D3_QUANT
+        FROM %Table:SD3010% (NOLOCK) SD3
+        WHERE D3_FILIAL = '01' // %xFilial:SD3%
+                AND D3_EMISSAO = %Exp:dData% //'20251216' //
+                AND D3_DOCGUIA = ''
+                AND LEFT(D3_DOC, 2) = 'gi'
+                AND D3_ESTORNO  = ''
+                AND SD3.%notDel%
+        ORDER BY 1,2
+    EndSql
+
+    If !MOVINT->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While MOVINT->(!eof())
+        jJsonItem := JsonObject():New()
+
+        ::setDoc(MOVINT->D3_DOC)
+        ::setCod(MOVINT->D3_COD)
+        ::setTm(MOVINT->D3_TM)
+        ::setCf(MOVINT->D3_CF)
+        ::setQtd(MOVINT->D3_QUANT)
+
+        jJsonItem['message'] := "Registro encontrado."
+        jJsonItem['code'] := 200
+        jJsonItem['doc'] := ::getDoc()
+        jJsonItem['cod'] := ::getCod()
+        jJsonItem['tm'] := ::getTm()
+        jJsonItem['cf'] := ::getCf()
+        jJsonItem['qtd'] := ::getQtd()
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        MOVINT->(dbskip())
+
+    enddo
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de operadores                                !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    //Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    lRetorno := ::dados()
+
+    If !lRetorno
+        //aAdd(oRetorno["retorno"], aItens)
+        //jJsonItem['pedidos'] := aItens
+        jJsonItem['message'] := "Nenhum registro foi encontrado."
+        jJsonItem['code'] := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+
+/*
+{
+    "retorno": [
+        {
+            "message": "Registro encontrado.",
+            "code": 200,
+            "doc": "gi0113909",
+            "cod": "F00423070000061072",
+            "tm": "999",
+            "cf": "RE7",
+            "qtd": 1
+        },
+        {
+            "message": "Registro encontrado.",
+            "code": 200,
+            "doc": "gi0113909",
+            "cod": "F00423070000063421",
+            "tm": "499",
+            "cf": "DE7",
+            "qtd": 1
+        },
+        {
+            "message": "Registro encontrado.",
+            "code": 200,
+            "doc": "gi0113909",
+            "cod": "F00423070000063422",
+            "tm": "499",
+            "cf": "DE7",
+            "qtd": 1
+        }
+    ]
+}
+*/

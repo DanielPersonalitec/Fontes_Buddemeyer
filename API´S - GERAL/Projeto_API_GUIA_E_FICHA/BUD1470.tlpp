@@ -1,0 +1,1376 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include 'tlpp-core.th'
+#INCLUDE 'TOTVS.CH'
+
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace custom.buddemeyer.guias
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! ProcGuias                                                    !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! API PORTAL GUIAS                                             !
+! Data       ! 04-09-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Class ProcGuias
+
+    public Method New() CONSTRUCTOR
+
+    @post("/v1/ProcTransGuia/",description=' Processamento de Guias para transferência.')
+    public Method ProcGuiasTransferencia() as logical //OK
+
+    @post("/v1/ProcDesmontagemGuia/",description=' Processamento de Guias para desmontagem.')
+    public Method ProcGuiasDesmontagem() as logical //OK
+
+    @post("/v1/ProcEstDesmontagem/",description=' Inclusão de Orçamento.')
+    public Method EstDesmontagem() as logical //OK
+
+    @post("/v1/ProcEstTransferencia/",description=' Processamento de estorno de transferência.')
+    public Method EstTransferencia() as logical //OK
+
+    @get("/v1/ProcSaldoEstq/",description=' Processamento de saldo de estoque.')
+    public Method SaldoEst() as logical //OK
+
+    @get("/v1/ProcGetProd/",description=' Retorno de Produtos.')
+    public Method GetProduto() as logical //OK
+
+    @get("/v1/ProcGetLocal/",description=' Retorna o local do Produto.')
+    public Method GetLocalProd() as logical //OK
+
+    @get("/v1/ProcGetLocalTodos/",description=' Retorna todos os locais de estoque.')
+    public Method GetLocalProdTodos() as logical //OK
+
+EndClass
+
+Method New() Class ProcGuias
+Return
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! ProcGuiasTransferencia                                       !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza uma transferência de estoque no protheus             !
+! Data       ! 09-09-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method ProcGuiasTransferencia() Class ProcGuias
+
+    Local lContiZ     := .T.
+    Local nOpcX       := 3
+    Local cZMsg5      := ""
+    Local lErroTr     := .F.
+    Local cEOLZ       := CHR(13)+CHR(10)
+    Local cDocGI      := ""
+    Local cGuia	      := ''
+    Local cRetJson    := ""
+    Local cRetJsVald1 := ""
+    Local nXZY        := 0
+    jPathParams       := oRest:getPathParamsRequest()
+    jHeader           := oRest:getHeaderRequest()
+    cBody             := oRest:getBodyRequest()
+    jQueryString      := oRest:getQueryRequest()
+
+    //VARIAVEIS UTILIZADAS NO MA261TRD3
+    private cBUDGuia  := ''
+    private cBUDDocGI := ""
+    private nXTrans   := 0
+    private jBody     := JsonObject():new()
+
+    cZMsg5 := " Inicio da Transferencia "+DTOS(DATE())+" "+TIME()+cEOLZ
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    cRetJsVald1 := ValidJson(2)
+
+    IF !Empty(AllTrim(cRetJsVald1))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald1)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return .T.
+    ENDIF
+
+    //DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025 - CONTROLE DE SEMÁFORO PARA EVITAR EXECUÇÃO CONCORRENTE
+    IF !LockByName("zExecGetD3Doc_lock", .T., .F.)
+        U_BUD1427("[BUD1275] - Atenção, outro usuário já está executando essa rotina (GetD3Doc)! ")
+        While lContiZ
+            Sleep(3000) // Aguarda 3000ms antes de tentar novamente
+            IF !LockByName("zExecGetD3Doc_lock", .T., .F.)
+            Else
+                cDocGI := GetD3Doc()
+                lContiZ := .F.
+                U_BUD1427("[BUD1275] - Atenção, executando essa rotina (GetD3Doc)! ")
+            ENDIF
+        End
+    Else
+        cDocGI := GetD3Doc()
+    EndIf
+
+    cBUDDocGI := cDocGI
+    //FIM - DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025
+
+    U_BUD1427(Replicate("=",80))
+    U_BUD1427("[BUD1275] - WS TRANSFERENCIA DE ESTOQUE - INICIO ("+TIME()+")")
+
+    //Cabecalho
+    aAuto := {{cDocGI,dDataBase}}
+
+    For nXZY := 1 to Len(jBody['adadostransf'])
+        IF !lErroTr
+            cGuia	:= jBody['adadostransf'][nXZY]['docguia']
+            cBUDGuia := cGuia
+            dbSelectArea("SB1")
+            SB1->(dbSetOrder(1))
+            If  SB1->(dbSeek(xFilial("SB1")+jBody['adadostransf'][nXZY]['oriprod']))
+                cProdOri := SB1->B1_COD
+                cDescOri := SB1->B1_DESC
+                cUnidOri := SB1->B1_UM
+                cZMsg5 += "Produto de ori: " + cProdOri + cEOLZ
+                cZMsg5 += "Descricao de ori: " + cDescOri + cEOLZ
+                cZMsg5 += "Unidade de ori: " + cUnidOri + cEOLZ
+                cZMsg5 += "Guia de ori: " + cGuia + cEOLZ
+            Else
+                cRetJson +=  CriaRetJson(400,"Produto origem nao encontrado - Prod Ori:"+jBody['adadostransf'][nXZY]['oriprod'])
+                lErroTr := .T.
+            EndIf
+
+            SB1->(dbGoTop())
+            If SB1->(dbSeek(xFilial("SB1")+jBody['adadostransf'][nXZY]['desprod']))
+                cProdDes := SB1->B1_COD
+                cDescDes := SB1->B1_DESC
+                cUnidDes := SB1->B1_UM
+                cZMsg5 += "Produto de des: " + cProdDes + cEOLZ
+                cZMsg5 += "Descricao de des: " + cDescDes + cEOLZ
+                cZMsg5 += "Unidade de des: " + cUnidDes + cEOLZ
+                cZMsg5 += "Guia de des: " + cGuia + cEOLZ
+            Else
+                IF !lErroTr
+                    cRetJson +=  CriaRetJson(400,"Produto destino nao encontrado  Prod Des:"+jBody['adadostransf'][nXZY]['desprod'])
+                    lErroTr := .T.
+                ENDIF
+            EndIf
+
+            IF !lErroTr
+
+                DBSELECTAREA("SB2")
+                dbSetOrder(1)
+
+                CriaSB2(cProdOri,jBody['adadostransf'][nXZY]['deslocal'])
+                CriaSB2(cProdDes,jBody['adadostransf'][nXZY]['deslocal'])
+                cLocal := jBody['adadostransf'][nXZY]['orilocal']
+
+                cQueryZ1 := " Select R_E_C_N_O_ AS RECB2 FROM "+RETSQLNAME('SB2')+" WHERE B2_FILIAL = '"+xFilial("SB2")+"' AND B2_COD = '"+AllTrim(cProdOri)+"' AND B2_LOCAL = '"+AllTrim(cLocal)+"' AND D_E_L_E_T_ = '' "
+                cAliasZ1 := Getnextalias()
+                MPSysOpenQuery(cQueryZ1,cAliasZ1)
+
+                If (cAliasZ1)->(!EOF())
+
+                    SB2->(DBGoTo((cAliasZ1)->RECB2))
+                    nSaldo := SB2->B2_QATU
+
+                    If jBody['adadostransf'][nXZY]['quantidade'] > nSaldo
+                        cRetJson +=  CriaRetJson(400,"A quantidade solicitada e maior do que o disponível em estoque- Prod Ori:"+AllTrim(cProdOri)+" Local:"+AllTrim(cLocal)+" Quant Sol:"+AllTrim(Str(jBody['adadostransf'][nXZY]['quantidade']))+" Quant Disp:"+AllTrim(Str(nSaldo)))
+                        lErroTr := .T.
+                    EndIf
+
+                    IF !lErroTr
+                        If (jBody['adadostransf'][nXZY]['orilocal'] != jBody['adadostransf'][nXZY]['deslocal']) .OR. (cProdOri != cProdDes)
+                            AADD(aAuto,{cProdOri,;                       // 01.Produto Origem
+                                cDescOri,;                       // 02.Descricao
+                                cUnidOri,;                       // 03.Unidade de Medida
+                                jBody['adadostransf'][nXZY]['orilocal'],;  // 04.Local Origem
+                                CriaVar("D3_LOCALIZ",.F.),;      // 05.Endereco Origem
+                                cProdDes,;                    	 // 06.Produto Destino
+                                cDescDes,;                       // 07.Descricao
+                                cUnidDes,;                       // 08.Unidade de Medida
+                                jBody['adadostransf'][nXZY]['deslocal'],;  // 09.Armazem Destino
+                                CriaVar("D3_LOCALIZ",.F.),;      // 10.Endereco Destino
+                                CriaVar("D3_NUMSERI",.F.),;    	 // 11.Numero de Serie
+                                CriaVar("D3_LOTECTL",.F.),;      // 12.Lote Origem
+                                CriaVar("D3_NUMLOTE",.F.),;      // 13.Sublote
+                                CriaVar("D3_DTVALID",.F.),;      // 14.Data de Validade
+                                CriaVar("D3_POTENCI",.F.),;      // 15.Potencia do Lote
+                                jBody['adadostransf'][nXZY]['quantidade'],; // 16.Quantidade
+                                CriaVar("D3_QTSEGUM",.F.),;      // 17.Quantidade na 2 UM
+                                CriaVar("D3_ESTORNO",.F.),;      // 18.Estorno
+                                CriaVar("D3_NUMSEQ" ,.F.),;      // 19.NumSeq
+                                CriaVar("D3_LOTECTL",.F.),;      // 20.Lote Destino
+                                CriaVar("D3_DTVALID",.F.),;      // 21.Data de Validade
+                                CriaVar("D3_ITEMGRD",.F.),;      // 22.Item Grade
+                                CriaVar("D3_OBSERVA",.F.)})
+
+                        EndIf
+                    EndIf
+                    (cAliasZ1)->(DBCloseArea())
+                ELSE
+                    cRetJson +=  CriaRetJson(400,"Registro nao encontrado na SB2 - Prod Ori:"+AllTrim(cProdOri)+" Local:"+AllTrim(cLocal))
+                    lErroTr := .T.
+                EndIf
+            ELSE
+                aAuto := {}
+                Exit
+            ENDIF
+        ELSE
+            aAuto := {}
+            Exit
+        ENDIF
+    Next nXZY
+
+    If Len(aAuto) > 1
+        lMsErroAuto := .F.		//Indica retorno da MsExecAuto()
+        lAutoErrNoFile := .T.	//Usada dentro da MsExecAuto()
+        MSExecAuto({|x,y| mata261(x,y)},aAuto,nOpcX)
+
+        If lMsErroAuto
+
+            cZMsg5 += "Fim da Transferencia Erro "+TIME() + cEOLZ
+            RollbackSx8()
+            cErro := ""
+            aErro := GetAutoGRLog()
+            For nXZY := 1 To Len(aErro)
+                cErro += aErro[nXZY] + Chr(13)+Chr(10)
+            Next nXZY
+
+            cRetJson +=  CriaRetJson(400,"Fim da Transferencia - "+cErro)
+
+        Else
+            cRetJson  += CriaRetJson(200,"Transferência realizada com sucesso!" , cDocGI)
+            cZMsg5 += "Fim da Transferencia Sucesso - "+cDocGI+ " " +TIME() + cEOLZ
+        EndIf
+
+    Else
+        IF Empty(AllTrim(cRetJson))
+            cRetJson  += CriaRetJson(400,"Não foi possível popular os itens.")
+        EndIf
+    EndIf
+
+    //DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025 - FIM DO CONTROLE DE SEMÁFORO
+    cZMsg5 += "*********************************************************************" + cEOLZ
+    _B1475LOG(cZMsg5)
+    UnLockByName("zExecGetD3Doc_lock", .T., .F.)
+
+    oRest:setFault(cRetJson)
+    oRest:setStatusCode(200)
+
+Return .T.
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo ProcGuiasDesmontagem                                  !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza a desmontagem de um produto no protheus              !
+! Parametros ! 11-09-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method ProcGuiasDesmontagem() Class ProcGuias
+
+    Local lRet       := .T.
+    Local lContiZ    := .T.
+    Local cZMsg6     := ""
+    Local cRetJson1  := ""
+    Local cRetJsVald := ""
+    Local cEOL8      := CHR(13)+CHR(10)
+    Local nNxX       := 0
+    Local cDocGI     := ""
+    Local nQtdSegUm  := 0
+    Private jBody    := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    //FAZ A VALIDAÇÃO DO JSON, DE QUALQUER CAMPO EM BRANCO.
+    cRetJsVald := ValidJson(1)
+
+    IF !Empty(AllTrim(cRetJsVald))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return lRet
+    ENDIF
+
+    cZMsg6 += " Inicio da Desmontagem "+DTOS(DATE())+" "+TIME()+cEOL8
+
+    //DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025 - CONTROLE DE SEMÁFORO PARA EVITAR EXECUÇÃO CONCORRENTE
+    IF !LockByName("zExecGetD3Doc_lock", .T., .F.)
+        U_BUD1427("[BUD1275] - Atenção, outro usuário já está executando essa rotina (GetD3Doc)! ")
+        While lContiZ
+            Sleep(3000) // Aguarda 3000ms antes de tentar novamente
+            IF !LockByName("zExecGetD3Doc_lock", .T., .F.)
+            Else
+                cDocGI := GetD3Doc()
+                lContiZ := .F.
+                U_BUD1427("[BUD1275] - Atenção, executando essa rotina (GetD3Doc)! ")
+            ENDIF
+
+        End
+    Else
+        cDocGI := GetD3Doc()
+    EndIf
+    //FIM - DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025
+
+    cZMsg6 += " Doc : "+cDocGI+cEOL8
+
+    U_BUD1427(Replicate("=",80))
+    U_BUD1427("[BUD1275] - WS DESMONTAGEM DE PRODUTO - INICIO ("+TIME()+")")
+
+    SB1->(dbSetOrder(1))
+    If !SB1->(dbSeek(xFilial("SB1")+jBody["adadosdesmon"]["prodori"]))
+        cRetJson1 :=  CriaRetJson(400,"Produto origem nao encontrado - Prod Ori:"+jBody["adadosdesmon"]["prodori"])
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return lRet
+    EndIf
+
+    cLocal := jBody["adadosdesmon"]["orilocal"]
+    nQuant := jBody["adadosdesmon"]["quanti"]
+
+    CriaSB2(SB1->B1_COD,cLocal)
+
+    //Caclculo da segunda unidade de medida
+    If SB1->B1_TIPCONV == "M"
+        nQtdSegUm := nQuant * SB1->B1_CONV
+    Else
+        nQtdSegUm := nQuant / SB1->B1_CONV
+    EndIf
+
+    aCabecSD3 := {	{"cProduto"   , SB1->B1_COD           , Nil}, ;
+        {"cLocOrig"   , cLocal                , Nil}, ;
+        {"nQtdOrig"   , nQuant                , Nil}, ;
+        {"nQtdOrigSe" , nQtdSegUm             , Nil}, ;
+        {"cDocumento" , cDocGI                , Nil}, ;
+        {"cNumLote"   , CriaVar("D3_NUMLOTE") , Nil}, ;
+        {"cLoteDigi"  , CriaVar("D3_LOTECTL") , Nil}, ;
+        {"dDtValid"   , CriaVar("D3_DTVALID") , Nil}, ;
+        {"nPotencia"  , CriaVar("D3_POTENCI") , Nil}, ;
+        {"cLocaliza"  , CriaVar("D3_LOCALIZ") , Nil}, ;
+        {"cNumSerie"  , CriaVar("D3_NUMSERI") , Nil}}
+
+    //Leio o total de itens para buscar a quantidade de produtos, afim de realizar o rateio
+    nTotQuant := 0
+    nTotCusto := 0
+
+    ZZY->(dbSetOrder(1))
+    For nNxX := 1 to Len(jBody["adadosdesmon"]["itensdes"])
+        ZZY->(dbGoTop())
+        If ZZY->(dbSeek(xFilial("ZZY")+jBody["adadosdesmon"]["itensdes"][nNxX]["prodes"]))
+            If ZZY->ZZY_CUSTO == 0
+                nTotCusto += ZZY->ZZY_CUSTO
+            Else
+                nTotCusto := 0
+                Exit
+            EndIf
+        Else
+            nTotCusto := 0
+            Exit
+        EndIf
+    Next nNxX
+
+    If nTotCusto == 0
+        For nNxX := 1 to Len(jBody["adadosdesmon"]["itensdes"])
+            nTotQuant += jBody["adadosdesmon"]["itensdes"][nNxX]["desquant"]
+        Next nNxX
+    EndIf
+
+    aItensSD3  := {}
+    For nNxX := 1 to Len(jBody["adadosdesmon"]["itensdes"])
+
+        SB1->(dbGoTop())
+        If !SB1->(dbSeek(xFilial("SB1")+jBody["adadosdesmon"]["itensdes"][nNxX]["prodes"]))
+            cRetJson1 :=  CriaRetJson(400,"Produto destino nao encontrado - Prod des: "+jBody["adadosdesmon"]["itensdes"][nNxX]["prodes"])
+            oRest:setFault(cRetJson1)
+            oRest:setStatusCode(200)
+            Return lRet
+        EndIf
+
+        CriaSB2(SB1->B1_COD,cLocal)
+        CriaSB2(SB1->B1_COD,jBody["adadosdesmon"]["itensdes"][nNxX]["deslocal"])
+
+        nQuant := jBody["adadosdesmon"]["itensdes"][nNxX]["desquant"]
+
+        //Calculo da segunda unidade de medida
+        If SB1->B1_TIPCONV == "M"
+            nQtdSegUm := nQuant * SB1->B1_CONV
+        Else
+            nQtdSegUm := nQuant / SB1->B1_CONV
+        EndIf
+
+        If nTotCusto > 0
+            //Calculo do rateio
+            ZZY->(dbGoTop())
+            If ZZY->(dbSeek(xFilial("ZZY")+jBody["adadosdesmon"]["itensdes"][nNxX]["prodes"]))
+                nRateio := (ZZY->ZZY_CUSTO/nTotCusto) * 100
+            Else
+                nRateio := 0
+            EndIf
+        Else
+            nRateio := (nQuant/nTotQuant) * 100
+        EndIf
+
+        AADD(aItensSD3,{	{"D3_COD"     , SB1->B1_COD           , Nil}, ;
+            {"D3_LOCAL"   , jBody["adadosdesmon"]["itensdes"][nNxX]["deslocal"], Nil}, ;
+            {"D3_QUANT"   , nQuant                , Nil}, ;
+            {"D3_QTSEGUM" , nQtdSegUm             , Nil}, ;
+            {"D3_RATEIO"  , nRateio               , Nil} })
+
+    Next nNxX
+
+    lMsErroAuto := .F.		//Indica retorno da MsExecAuto()
+    lAutoErrNoFile := .T.	//Usada dentro da MsExecAuto()
+    MSExecAuto({|v,x,y,z| Mata242(v,x,y,z)},aCabecSD3,aItensSD3,3,.T.)
+
+    If lMsErroAuto
+        RollbackSx8()
+        cErro := "ERRO - "
+        aErro := GetAutoGRLog()
+
+        For nNxX := 1 To Len(aErro)
+            cErro += aErro[nNxX] + Chr(13)+Chr(10)
+        Next nNxX
+
+        cRetJson1 :=  CriaRetJson(400,"Fim da Desmontagem - "+cErro)
+        cZMsg6 += " Fim da Desmontagem Erro "+DTOS(DATE())+" "+TIME()+cEOL8
+    Else
+        cZMsg6 += " Fim da Desmontagem Sucesso "+DTOS(DATE())+" "+TIME()+cEOL8
+
+        cRetJson1 :=  CriaRetJson(200,"Desmontagem realizada com sucesso!" , cDocGI)
+    EndIf
+
+    //DANIEL VICTOR DA ROSA - PERSONALITEC - 10-07-2025 - FIM DO CONTROLE DE SEMÁFORO
+    cZMsg6 += "*********************************************************************"+cEOL8
+    _B1475L2(cZMsg6)
+    UnLockByName("zExecGetD3Doc_lock", .T., .F.)
+
+    oRest:setFault(cRetJson1)
+    oRest:setStatusCode(200)
+
+Return lRet
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo EstTransferencia                                      !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Estorna Transferência                                        !
+! Data       ! 18-09-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method EstTransferencia() Class ProcGuias
+
+    Local lRet       := .T.
+    Local cRetJson5  := ""
+    Local nX7O       := 0
+    Local nOpcX      := 6 //Estorno
+    Private jBody    := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    cRetJsVald := ValidJson(5)
+
+    IF !Empty(AllTrim(cRetJsVald))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return lRet
+    ENDIF
+
+    U_BUD1427(Replicate("=",80))
+    U_BUD1427("[BUD1275] - WS ESTORNO TRANSFERENCIA DE ESTOQUE - INICIO ("+TIME()+")")
+
+    cDocEstTransf  :=  PADR(jBody["adadosesttransf"]["docesttransf"],TAMSX3("D3_DOC")[1])
+    cProdEstTransf := PADR(jBody["adadosesttransf"]["prodesttransf"],TAMSX3("D3_COD")[1])
+
+    //D3_FILIAL + D3_DOC + D3_COD - Documento + Produto
+    SD3->(dbSetOrder(2))
+    If SD3->(dbSeek(xFilial("SD3")+cDocEstTransf+cProdEstTransf))
+
+        aAuto := {}
+        AADD(aAuto,{cDocEstTransf, DDATABASE})
+
+        lMsErroAuto := .F.
+        lAutoErrNoFile := .T.
+        MSExecAuto({|x,y| mata261(x,y)},aAuto,nOpcX)
+
+        If lMsErroAuto
+            RollbackSx8()
+            cErro := ""
+            aErro := GetAutoGRLog()
+
+            For nX7O := 1 To Len(aErro)
+                cErro += aErro[nX7O] + Chr(13)+Chr(10)
+            Next nX7O
+
+            cRetJson5 :=  CriaRetJson(400,"Fim do estorno da transferencia - "+cErro)
+        Else
+            cRetJson5 :=  CriaRetJson(200,"Estorno da transferencia realizado com sucesso! - Doc:"+AllTrim(cDocEstTransf) +" - Produto:"+AllTrim(cProdEstTransf))
+        EndIf
+    Else
+        cRetJson5 :=  CriaRetJson(400, "Documento nao localizado no sistema, Favor verificar com a TI! Doc: " + AllTrim(cDocEstTransf) +" - Produto:"+AllTrim(cProdEstTransf) )
+    EndIf
+
+    oRest:setFault(cRetJson5)
+    oRest:setStatusCode(200)
+
+Return lRet
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo EstDesmontagem                                        !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Estorno da Desmontagem.                                      !
+! Data       ! 18-09-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method EstDesmontagem() Class ProcGuias
+
+    Local lRet  := .T.
+    Local nXZUI := 0
+    Local cRetJson4 := ""
+    Private jBody  := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    cRetJsVald := ValidJson(4)
+
+    IF !Empty(AllTrim(cRetJsVald))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return lRet
+    ENDIF
+
+    U_BUD1427(Replicate("=",80))
+    U_BUD1427("[BUD1275] - WS ESTORNO DESMONTAGEM DE PRODUTO - INICIO ("+TIME()+")")
+
+    aCabecSD3 := {}
+    aItensSD3 := {}
+
+    cDocEstDesmon :=  PADR(jBody["adadosestdesmon"]["docestdesmon"],TAMSX3("D3_DOC")[1])
+    cProdEstDesmon := PADR(jBody["adadosestdesmon"]["prodestdesmon"],TAMSX3("D3_COD")[1])
+
+    //D3_FILIAL + D3_DOC + D3_COD - Documento + Produto
+    SD3->(dbSetOrder(2))
+    If SD3->(dbSeek(xFilial("SD3")+cDocEstDesmon+cProdEstDesmon))
+
+        lMsErroAuto := .F.
+        lAutoErrNoFile := .T.
+        MSExecAuto({|v,x,y,z| Mata242(v,x,y,z)},aCabecSD3,aItensSD3,5,.T.)
+
+        If lMsErroAuto
+            RollbackSx8()
+            cErro := "ERRO - "
+            aErro := GetAutoGRLog()
+
+            For nXZUI := 1 To Len(aErro)
+                cErro += aErro[nXZUI] + Chr(13)+Chr(10)
+            Next nXZUI
+
+            cRetJson4 :=  CriaRetJson(400,"Fim do estorno da desmontagem - "+cErro)
+        Else
+            cRetJson4 :=  CriaRetJson(200,"Fim do estorno da desmontagem - Sucesso - Doc:"+AllTrim(cDocEstDesmon) +" - Produto:"+AllTrim(cProdEstDesmon))
+        EndIf
+    Else
+        cRetJson4 :=  CriaRetJson(400, "Documento nao localizado no sistema! Favor verificar com a TI! Doc: " + AllTrim(cDocEstDesmon) +" - Produto: "+AllTrim(cProdEstDesmon))
+    EndIf
+
+    oRest:setFault(cRetJson4)
+    oRest:setStatusCode(200)
+
+Return lRet
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Method SaldoEst                                              !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza uma verificação de estoque no protheus               !
+! Data       ! 16/09/2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method SaldoEst() Class ProcGuias
+
+    Local lRet      := .T.
+    Local cRetJson2 := ""
+    Local cProduto  := ""
+    Local cLocal    := ""
+    Local nSaldo    := 0
+    Private jBody   := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    cRetJsVald := ValidJson(3)
+
+    IF !Empty(AllTrim(cRetJsVald))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return lRet
+    ENDIF
+
+    U_BUD1427(Replicate("=",80))
+    U_BUD1427("[BUD1275] - WS SALDO EM ESTOQUE - INICIO ("+TIME()+")")
+
+    cProduto := PADR(jBody['adadosestoque']['prodconsult'],TAMSX3("B1_COD")[1])
+    cLocal   := PADR(jBody['adadosestoque']['localconsult'],TAMSX3("B2_LOCAL")[1])
+    nQuant   := jBody['adadosestoque']['quantconsult']
+
+    dbSelectArea("SB1")
+    dbSetOrder(1)
+    If !MsSeek(xFilial("SB1")+cProduto)
+        cRetJson2 :=  CriaRetJson(400,"Produto nao encontrado na SB1 - Prod:"+cProduto)
+    EndIf
+
+    dbSelectArea("SB2")
+    dbSetOrder(1)
+
+    cQueryZ2 := " Select R_E_C_N_O_ AS RECB2 FROM "+RETSQLNAME('SB2')+" WHERE B2_FILIAL = '01' AND B2_COD = '"+AllTrim(cProduto)+"' AND B2_LOCAL = '"+AllTrim(cLocal)+"' AND D_E_L_E_T_ = '' "
+    cAliasZ2 := Getnextalias()
+    MPSysOpenQuery(cQueryZ2,cAliasZ2)
+    If (cAliasZ2)->(!EOF())
+        SB2->(DBGoTo((cAliasZ2)->RECB2))
+        nSaldo := SB2->B2_QATU
+        If nQuant > nSaldo
+            cRetJson2 :=  CriaRetJson(400,"A quantidade solicitada ("+ALLTRIM(STR(nQuant))+") e maior do que o disponivel em estoque ("+ALLTRIM(STR(nSaldo))+")")
+        ELSE
+            cRetJson2 :=  CriaRetJson(200,"Sucesso - Saldo disponível em estoque para o produto "+AllTrim(cProduto)+" no local "+cLocal+" é de "+ALLTRIM(STR(nSaldo))+" unidades.")
+        EndIf
+        (cAliasZ2)->(DBCloseArea())
+    Else
+        cRetJson2 :=  CriaRetJson(400,"Não foi encontrado o registro na SB2 - Produto:"+AllTrim(cProduto)+" Local:"+AllTrim(cLocal))
+    EndIf
+
+    oRest:setFault(cRetJson2)
+    oRest:setStatusCode(200)
+
+Return lRet
+
+/*
+/============================================================================\
+|Nome              : GetD3Doc                                                |
+|============================================================================|
+|Descricao         : Busca numeração para documento na SD3                   |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 04-09-2025                                              |
+\============================================================================/
+*/
+Static Function GetD3Doc()
+
+    Local cDocGIRet	:= 'tgi0000000'
+
+    // Busco última numeração:
+    If (Select("T1307D3") <> 0)
+        dbSelectArea("T1307D3")
+        dbCloseArea()
+    EndIf
+    BeginSQL ALIAS "T1307D3"
+        SELECT
+            DISTINCT TOP 1 ISNULL(MAX(D3_DOC), 'tgi000000') AS D3MKT
+        FROM
+            SD3010 (NOLOCK)
+        WHERE
+            D3_FILIAL = %xfilial:SD3%
+            AND D3_DOC BETWEEN 'tgi000000' AND 'tgizzzzzzzz'
+            AND %TABLE:SD3%.%NotDel%
+    EndSQL
+    If !T1307D3->(Eof())
+        cDocGIRet := T1307D3->D3MKT
+        While .T.
+            // Somo um na numeração:
+            cDocGIRet := Soma1(cDocGIRet)
+
+            // Verifico se o registro existe:
+            If (Select("TSD3EXIST") <> 0)
+                dbSelectArea("TSD3EXIST")
+                dbCloseArea()
+            EndIf
+            BeginSQL ALIAS "TSD3EXIST"
+                SELECT
+                    DISTINCT TOP 1 D3_DOC
+                FROM
+                    SD3010 (NOLOCK)
+                WHERE
+                    D3_FILIAL = %xfilial:SD3%
+                    AND D3_DOC = %Exp:cDocGIRet%
+                    AND %TABLE:SD3%.%NotDel%
+            EndSQL
+            // Caso não exista eu posso sair do loop:
+            If TSD3EXIST->(Eof())
+                Exit
+            EndIf
+        EndDo
+    EndIf
+
+Return cDocGIRet
+
+/*
+/============================================================================\
+|Nome              : _B1475LOG                                               |
+|============================================================================|
+|Descricao         : Função para gerar Logs de GuiA                          |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 14/08/2025 - Para Transferência                         |
+\============================================================================/
+*/
+Static Function _B1475LOG(_cZMsg)
+    Local cArqTxt := "GUIA_TRANSFERENCIA_BUD1275_LOGS.txt"
+    Local nHdlog  := fOpen(cArqTxt,2)
+    //caso não consiga abrir o arquivo...
+    If nHdlog == -1
+        //tenta cria-lo
+        nHdlog := fCreate(cArqTxt,2)
+        //se também der erro
+        If 	nHdlog == -1
+            U_BUD1427('Erro ao Gerar o Arquivo de Log GUIA_BUD1275_LOGS !!!')
+            Return
+        EndIf
+    Else
+        //vai para o fim do arquivo
+        fSeek(nHdlog,0,2)
+    Endif
+    fWrite(nHdlog,_cZMsg,Len(_cZMsg))
+    fClose(nHdlog)
+Return
+
+/*
+/============================================================================\
+|Nome              : _B1475L2                                               |
+|============================================================================|
+|Descricao         : Função para gerar Logs de GuiA                          |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 14/08/2025 - Para Desmontagem                           |
+\============================================================================/
+*/
+Static Function _B1475L2(_cZMsg6)
+    Local cArqTxt := "GUIA_DESMONTAGEM_BUD1275_LOGS.txt"
+    Local nHdlog  := fOpen(cArqTxt,2)
+    //caso não consiga abrir o arquivo...
+    If nHdlog == -1
+        //tenta cria-lo
+        nHdlog := fCreate(cArqTxt,2)
+        //se também der erro
+        If 	nHdlog == -1
+            U_BUD1427('Erro ao Gerar o Arquivo de Log GUIA_BUD1275_LOGS !!!')
+            Return
+        EndIf
+    Else
+        //vai para o fim do arquivo
+        fSeek(nHdlog,0,2)
+    Endif
+    fWrite(nHdlog,_cZMsg6,Len(_cZMsg6))
+    fClose(nHdlog)
+Return
+
+/*
+/============================================================================\
+|Nome              : CriaRetJson                                            |
+|============================================================================|
+|Descricao         : Função para gerar o Retorno do Json Desmontagem         |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 11/09/2025                                              |
+\============================================================================/
+*/
+Static Function CriaRetJson(nStatus,cMsg,cDocG)
+
+    Local cJson := ""
+    Local aLinhas  := StrTokArr(cMsg, Chr(13)+Chr(10))
+    Local nIZ8    := 0
+    Local nNZY    := 0
+    Local cMensFin  := ""
+    Default cDocG := ""
+
+    For nIZ8 := 1 To LEN(aLinhas)
+        nNZY++
+        cMensFin += AllTrim(aLinhas[nIZ8])
+        IF nNZY == 2
+            Exit
+        ENDIF
+    Next nIZ8
+
+    For nIZ8 := 1 To Len(aLinhas)
+        If At("< --", aLinhas[nIZ8]) > 0 .OR.  At("< ", aLinhas[nIZ8]) > 0
+            cMensFin += " - CAMPO :" + AllTrim(SubStr(aLinhas[nIZ8], At("-", aLinhas[nIZ8]) + 1, 20))
+            Exit
+        EndIf
+    Next nIZ8
+
+    cJson += '{'
+    cJson += '"adadosret": ['
+    cJson += '{'
+    cJson += '"status": "' + cValToChar(nStatus) + '",'
+    cJson += '"message": "' + cMensFin + '"'
+    IF !Empty(AllTrim(cDocG))
+        cJson += ',"docguia": "' + cDocG + '"'
+    ENDIF
+    cJson += '}'
+    cJson += ']'
+    cJson += '}'
+
+Return cJson
+
+/*
+/============================================================================\
+|Nome              : ValidJson                                               |
+|============================================================================|
+|Descricao         : Função para validar o json                              |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 11/09/2025                                              |
+\============================================================================/
+*/
+Static Function ValidJson(nOpc)
+
+    Local cRet  := "Favor Preencher as tags obrigatórias: "
+    Local cRet1 := ""
+    Local nXZp  := 0
+
+    //VALIDA JSON DESMONTAGEM
+    IF nOpc == 1
+        IF  ValType(jBody["adadosdesmon"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosdesmon"]["prodori"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosdesmon"]["prodori"]))
+                cRet1 += " - prodori"
+            ENDIF
+            IF ValType(jBody["adadosdesmon"]["orilocal"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosdesmon"]["orilocal"]))
+                cRet1 += " - orilocal"
+            ENDIF
+            IF ValType(jBody["adadosdesmon"]["quanti"]) <> "N" .OR. jBody["adadosdesmon"]["quanti"] <= 0
+                cRet1 += " - quanti"
+            ENDIF
+            IF ValType(jBody["adadosdesmon"]["itensdes"]) <> "U"
+                For nXZp := 1 To Len(jBody["adadosdesmon"]["itensdes"])
+                    IF ValType(jBody["adadosdesmon"]["itensdes"][nXZp]["prodes"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosdesmon"]["itensdes"][nXZp]["prodes"]))
+                        cRet1 += " - prodes " + " - Item: " + AllTrim(Str(nXZp))
+                    ENDIF
+                    IF ValType(jBody["adadosdesmon"]["itensdes"][nXZp]["deslocal"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosdesmon"]["itensdes"][nXZp]["deslocal"]))
+                        cRet1 += " - deslocal - Item: " + AllTrim(Str(nXZp))
+                    ENDIF
+                    IF ValType(jBody["adadosdesmon"]["itensdes"][nXZp]["desquant"]) <> "N" .OR. jBody["adadosdesmon"]["itensdes"][nXZp]["desquant"] <= 0
+                        cRet1 += " - desquant - Item: " + AllTrim(Str(nXZp))
+                    ENDIF
+                    IF !Empty(AllTrim(cRet1))
+                        Exit
+                    ENDIF
+                Next nXZp
+            ELSE
+                cRet1 += " - itensdes -
+            ENDIF
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON TRANSFERENCIA
+    IF nOpc == 2
+        IF ValType(jBody["adadostransf"]) == "U"
+            cRet := "O json enviado está incorreto, favor revisar."
+        ELSE
+            For nXZp := 1 To Len(jBody["adadostransf"])
+                IF ValType(jBody["adadostransf"][nXZp]["docguia"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadostransf"][nXZp]["docguia"]))
+                    cRet1 += " - docguia - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+
+                IF ValType(jBody["adadostransf"][nXZp]["oriprod"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadostransf"][nXZp]["oriprod"]))
+                    cRet1 += " - oriprod - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+                IF ValType(jBody["adadostransf"][nXZp]["desprod"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadostransf"][nXZp]["desprod"]))
+                    cRet1 += " - desprod - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+                IF ValType(jBody["adadostransf"][nXZp]["orilocal"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadostransf"][nXZp]["orilocal"]))
+                    cRet1 += " - orilocal - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+                IF ValType(jBody["adadostransf"][nXZp]["deslocal"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadostransf"][nXZp]["deslocal"]))
+                    cRet1 += " - deslocal - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+                IF ValType(jBody["adadostransf"][nXZp]["quantidade"]) <> "N" .OR. jBody["adadostransf"][nXZp]["quantidade"] <= 0
+                    cRet1 += " - quantidade - Item: " + AllTrim(Str(nXZp))
+                ENDIF
+                IF !Empty(AllTrim(cRet1))
+                    Exit
+                ENDIF
+            Next nXZp
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON SALDO ESTOQUE
+    IF nOpc == 3
+        IF ValType(jBody["adadosestoque"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosestoque"]["prodconsult"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosestoque"]["prodconsult"]))
+                cRet1 += " - prodconsult"
+            ENDIF
+            IF ValType(jBody["adadosestoque"]["localconsult"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosestoque"]["localconsult"]))
+                cRet1 += " - localconsult"
+            ENDIF
+            IF ValType(jBody["adadosestoque"]["quantconsult"]) <> "N" .OR. jBody["adadosestoque"]["quantconsult"] <= 0
+                cRet1 += " - quantconsult"
+            ENDIF
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON ESTORNO DE DESMONTAGEM
+    IF nOpc == 4
+        IF ValType(jBody["adadosestdesmon"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosestdesmon"]["docestdesmon"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosestdesmon"]["docestdesmon"]))
+                cRet1 += " - docestdesmon"
+            ENDIF
+            IF ValType(jBody["adadosestdesmon"]["prodestdesmon"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosestdesmon"]["prodestdesmon"]))
+                cRet1 += " - prodestdesmon"
+            ENDIF
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON ESTORNO DE TRANSFÊRENCIA
+    IF nOpc == 5
+        IF ValType(jBody["adadosesttransf"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosesttransf"]["docesttransf"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosesttransf"]["docesttransf"]))
+                cRet1 += " - docesttransf"
+            ENDIF
+            IF ValType(jBody["adadosesttransf"]["prodesttransf"]) <> "C" .OR. Empty(ALLTRIM(jBody["adadosesttransf"]["prodesttransf"]))
+                cRet1 += " - prodesttransf"
+            ENDIF
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON GET PRODUTOS
+    IF nOpc == 6
+        IF ValType(jBody["adadosgetprod"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosgetprod"]["codprodbardesc"]) <> "C" .OR. EMPTY(jBody["adadosgetprod"]["codprodbardesc"])
+                cRet1 += " - codprodbardesc"
+            ENDIF
+        ENDIF
+    ENDIF
+
+    //VALIDA JSON GET LOCAL
+    IF nOpc == 7
+        IF ValType(jBody["adadosgetlocal"]) == "U"
+            Return "O json enviado está incorreto, favor revisar."
+        ELSE
+            IF ValType(jBody["adadosgetlocal"]["codproduto"]) <> "C" .OR. EMPTY(jBody["adadosgetlocal"]["codproduto"])
+                cRet1 += " - codproduto"
+            ENDIF
+        ENDIF
+    ENDIF
+
+    IF AllTrim(cRet1) == ""
+        cRet := ""
+    ELSE
+        cRet += cRet1
+    ENDIF
+
+Return cRet
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo GetProduto                                            !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza o Retorno de produto de acordo com o codigo enviado. !
+! Parametros ! 06-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method GetProduto() Class ProcGuias
+
+    Local cQueryB1   := ""
+    Local cRetJson1  := ""
+    Local cRetJsVald := ""
+    Local cJson      := ""
+    Local cDescAjust := ""
+    Local cBusca     := ""
+    Local cEOL8      := Chr(13)+Chr(10)
+    Local nPos       := 0
+    Local nZaw       := 0
+    Local nNumeros   := 0
+    Local nLetras    := 0
+    Local cChar      := ""
+    Local lPossuiLetra := .F.
+
+    Private jBody := JsonObject():New()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == Nil
+        SetRestFault(400, EncodeUTF8("Json sem dados, favor revisar."))
+        Return .T.
+    EndIf
+
+    // Validação do JSON
+    cRetJsVald := ValidJson(6)
+
+    If !Empty(AllTrim(cRetJsVald))
+        cRetJson1 := CriaRetJson(400,cRetJsVald)
+        oRest:SetFault(cRetJson1)
+        oRest:SetStatusCode(200)
+        Return .T.
+    EndIf
+
+    cBusca := AllTrim(jBody["adadosgetprod"]["codprodbardesc"])
+    cBusca := StrTran(cBusca,"'","''")
+    cTexto := AllTrim(cBusca)
+    For nPos := 1 To Len(cTexto)
+        cChar := SubStr(cTexto, nPos, 1)
+        If cChar $ "0123456789"
+            nNumeros++
+        ElseIf cChar $ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+            nLetras++
+        EndIf
+    Next nPos
+
+    // Retorna o resultado
+    If nLetras > nNumeros
+        lPossuiLetra := .T.
+    EndIf
+
+    cQueryB1 += " SELECT DISTINCT TOP 100 "
+    cQueryB1 += "        SB1.B1_COD, "
+    cQueryB1 += "        SB1.B1_DESC, "
+    cQueryB1 += "        SB1.B1_CODBAR, "
+    cQueryB1 += "        SB1.B1_UM, "
+    cQueryB1 += "        SZ7.Z7_QTDPCT "
+    cQueryB1 += " FROM " + RetSqlName("SB1") + " SB1 (NOLOCK) "
+    cQueryB1 += " INNER JOIN " + RetSqlName("SB2") + " SB2 (NOLOCK) "
+    cQueryB1 += "    ON SB2.B2_FILIAL = '01' "
+    cQueryB1 += "   AND SB2.B2_COD    = SB1.B1_COD "
+    cQueryB1 += "   AND SB2.B2_QATU   > 0 "
+    cQueryB1 += "   AND SB2.D_E_L_E_T_ = '' "
+    cQueryB1 += " LEFT JOIN " + RetSqlName("SZ7") + " SZ7 (NOLOCK) "
+    cQueryB1 += "    ON SZ7.Z7_FILIAL = '' "
+    cQueryB1 += "   AND SZ7.Z7_COD    = SB1.B1_CODMOD "
+    cQueryB1 += "   AND SZ7.D_E_L_E_T_ = '' "
+    cQueryB1 += " WHERE SB1.B1_FILIAL = '' "
+    cQueryB1 += "   AND SB1.D_E_L_E_T_ = '' "
+
+    If lPossuiLetra
+        cQueryB1 += " AND SB1.B1_DESC LIKE '" + cBusca + "%' "
+    Else
+        cQueryB1 += " AND ( "
+        cQueryB1 += "      SB1.B1_COD LIKE '" + cBusca + "%' "
+        cQueryB1 += "   OR SB1.B1_CODBAR LIKE '" + cBusca + "%' "
+        cQueryB1 += " ) "
+    EndIf
+
+    If Select("cAliasB1") > 0
+        (cAliasB1)->(DbCloseArea())
+    EndIf
+
+    cAliasB1 := GetNextAlias()
+
+    MPSysOpenQuery(cQueryB1,cAliasB1)
+
+    While !(cAliasB1)->(Eof())
+
+        nZaw++
+        cDescAjust := AjustCarcteres(AllTrim((cAliasB1)->B1_DESC))
+        If nZaw > 1
+            cJson += ","
+        EndIf
+        cJson += "{"
+        cJson += '"codprod":"'      + AllTrim((cAliasB1)->B1_COD)    + '",'
+        cJson += '"descprod":"'     + cDescAjust                     + '",'
+        cJson += '"codbarprod":"'   + AllTrim((cAliasB1)->B1_CODBAR) + '",'
+        cJson += '"unidprod":"'     + AllTrim((cAliasB1)->B1_UM)     + '",'
+        cJson += '"quantpctprod":'  + cValToChar((cAliasB1)->Z7_QTDPCT)
+        cJson += "}"
+        (cAliasB1)->(DbSkip())
+
+    EndDo
+
+    If !Empty(cJson)
+        cRetJson1 += "{"
+        cRetJson1 += '"status":"200",'
+        cRetJson1 += '"adadosret":['
+        cRetJson1 += cJson
+        cRetJson1 += "]"
+        cRetJson1 += "}"
+    Else
+        cRetJson1 += "{"
+        cRetJson1 += '"adadosret":['
+        cRetJson1 += "{"
+        cRetJson1 += '"status":"400",'
+        cRetJson1 += '"message":"Produto não encontrado."'
+        cRetJson1 += "}"
+        cRetJson1 += "]"
+        cRetJson1 += "}"
+    EndIf
+
+    oRest:SetFault(cRetJson1)
+    oRest:SetStatusCode(200)
+
+Return .T.
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo GetLocalProd                                            !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza o Retorno de produto de acordo com o codigo enviado. !
+! Parametros ! 07-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method GetLocalProd() Class ProcGuias
+
+    Local cQueryB2   := ""
+    Local cRetJson1  := ""
+    Local cRetJsVald := ""
+    Local cJson := ""
+    Local Nza2w       := 0
+    Local cEOL8      := CHR(13)+CHR(10)
+    Private jBody    := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    If jBody == nil
+        SetRestFault(400, encodeutf8("Json sem dados, favor revisar."))
+        Return .T.
+    ENDIF
+
+    //FAZ A VALIDAÇÃO DO JSON, DE QUALQUER CAMPO EM BRANCO.
+    cRetJsVald := ValidJson(7)
+
+    IF !Empty(AllTrim(cRetJsVald))
+        cRetJson1 :=  CriaRetJson(400,cRetJsVald)
+        oRest:setFault(cRetJson1)
+        oRest:setStatusCode(200)
+        Return .T.
+    ENDIF
+
+    cQueryB2 += "  SELECT DISTINCT SB2.B2_LOCAL, (SB2.B2_QATU-SB2.B2_RESERVA-SB2.B2_AEMPENH-SB2.B2_QEMP) AS B2_QATU FROM " +RetSqlName('SB2')+ "  (NOLOCK) SB2 "+cEOL8
+    cQueryB2 += "  WHERE SB2.B2_FILIAL = '01' "+cEOL8
+    cQueryB2 += "  AND SB2.B2_COD = "+VALTOSQL(jBody["adadosgetlocal"]["codproduto"]) + cEOL8
+    cQueryB2 += "  AND (SB2.B2_QATU-SB2.B2_RESERVA-SB2.B2_AEMPENH-SB2.B2_QEMP) > 0 "+cEOL8
+    cQueryB2 += "  AND SB2.D_E_L_E_T_ = '' "+cEOL8
+
+    IF Select("cAliasB2") > 0
+        cAliasB2->(DBCloseArea())
+    ENDIF
+
+    cAliasB2 := Getnextalias()
+
+    MPSysOpenQuery(cQueryB2,cAliasB2)
+
+    While (cAliasB2)->(!EOF())
+
+        Nza2w++
+
+        IF Nza2w == 1
+            cJson += '{'
+            cJson += '"codLocal": "' +AllTrim((cAliasB2)->B2_LOCAL) + '" ,'
+            cJson += '"quantpctprod": '+ cValToChar((cAliasB2)->B2_QATU) + " "
+            cJson += '}'
+        ELSE
+            cJson += ',{'
+            cJson += '"codLocal": "' +AllTrim((cAliasB2)->B2_LOCAL) + '" ,'
+            cJson += '"quantpctprod": '+ cValToChar((cAliasB2)->B2_QATU) + " "
+            cJson += '}'
+        ENDIF
+
+        (cAliasB2)->(DBSkip())
+    End
+
+    IF !Empty(cJson)
+        cRetJson1 += '{'
+        cRetJson1 += '"status": "' + cValToChar(200) + '",'
+        cRetJson1 += '"adadosret": ['
+        cRetJson1 += cJson
+        cRetJson1 += ']'
+        cRetJson1 += '}'
+    ELSE
+        cRetJson1 += '{'
+        cRetJson1 += '"adadosret": ['
+        cRetJson1 += '{'
+        cRetJson1 +=   '"status": "' + "400" + '",'
+        cRetJson1 +=   '"message": "' + "Local não encontrado." + '"'
+        cRetJson1 += '}'
+        cRetJson1 += ']'
+        cRetJson1 += '}'
+    ENDIF
+    oRest:setFault(cRetJson1)
+    oRest:setStatusCode(200)
+
+Return .T.
+
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! Metodo GetLocalProdTodos                                     !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza o Retorno de produto de acordo com o codigo enviado. !
+! Parametros ! 27-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method GetLocalProdTodos() Class ProcGuias
+
+    Local cQueryB2   := ""
+    Local cRetJson1  := ""
+    Local cJson := ""
+    Local Nza2w       := 0
+    Private jBody    := JsonObject():new()
+
+    jBody:FromJson(oRest:GetBodyRequest())
+
+    cQueryB2 +=  " SELECT DISTINCT SB2.B2_LOCAL FROM " +RETSQLNAME('SB2') + "  (NOLOCK) SB2 "
+    cQueryB2 +=  " WHERE  SB2.D_E_L_E_T_ = '' "
+    cQueryB2 +=  " AND (SB2.B2_QATU-SB2.B2_RESERVA-SB2.B2_AEMPENH-SB2.B2_QEMP) > 0 "
+
+    IF Select("cAliasB2") > 0
+        cAliasB2->(DBCloseArea())
+    ENDIF
+
+    cAliasB2 := GetNextAlias()
+
+    MPSysOpenQuery(cQueryB2,cAliasB2)
+
+    While (cAliasB2)->(!EOF())
+
+        Nza2w++
+
+        IF Nza2w == 1
+            cJson += '{'
+            cJson += '"status": "' + cValToChar(200) + '",'
+            cJson += '"codLocal": "' +AllTrim((cAliasB2)->B2_LOCAL) + '" '
+            cJson += '}'
+        ELSE
+            cJson += ',{'
+            cJson += '"status": "' + cValToChar(200) + '",'
+            cJson += '"codLocal": "' +AllTrim((cAliasB2)->B2_LOCAL) + '" '
+            cJson += '}'
+        ENDIF
+
+        (cAliasB2)->(DBSkip())
+    End
+
+    IF !Empty(cJson)
+        cRetJson1 += '{'
+        cRetJson1 += '"adadosret": ['
+        cRetJson1 += cJson
+        cRetJson1 += ']'
+        cRetJson1 += '}'
+    ELSE
+        cRetJson1 += '{'
+        cRetJson1 += '"adadosret": ['
+        cRetJson1 += '{'
+        cRetJson1 +=   '"status": "' + "400" + '",'
+        cRetJson1 +=   '"message": "' + "Local não encontrado." + '"'
+        cRetJson1 += '}'
+        cRetJson1 += ']'
+        cRetJson1 += '}'
+    ENDIF
+    oRest:setFault(cRetJson1)
+    oRest:setStatusCode(200)
+
+Return .T.
+
+/*/
+    Função:   AjustCarcteres()
+    Objetivo: Remover acentos e caracteres especiais de uma string,
+              mantendo apenas letras, números e espaços.
+              Daniel Victor da Rosa - Personalitec
+    Data:     2025-11-06
+/*/
+Static Function AjustCarcteres(cTexto)
+
+    Local cRetorno := ""
+    Local nPos     := 0
+    Local cChar    := ""
+    Local cAcentos := "ÁÀÂÃÄáàâãäÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ"
+    Local cNormais := "AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn"
+
+    // Garante string e remove espaços no início/fim
+    cTexto := AllTrim(cTexto)
+
+    For nPos := 1 To Len(cTexto)
+        cChar := SubStr(cTexto, nPos, 1)
+
+        // Substitui acentos por caracteres normais
+        If At(cChar, cAcentos) > 0
+            cChar := SubStr(cNormais, At(cChar, cAcentos), 1)
+        EndIf
+
+        // Mantém somente letras, números e espaço
+        If cChar $ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn-.opqrstuvwxyz0123456789 "
+            cRetorno += cChar
+        EndIf
+    Next nPos
+
+    // Remove espaços duplicados e converte para maiúsculo
+    cRetorno := StrTran(cRetorno, "  ", " ")
+    cRetorno := AllTrim(cRetorno)
+
+Return cRetorno
+
+
+/*/
+    Função: VerificaTipoString()
+    Daniel Victor da Rosa - Personalitec - 06-11-2025
+    Objetivo: Verificar se em uma string existem mais letras ou mais números
+    Retorno:
+        "L" -> mais letras
+        "N" -> mais números
+        "E" -> empate
+/*/
+Static Function VerificaTipoString(cTexto)
+    Local nLetras := 0
+    Local nNumeros := 0
+    Local nPosZ8 := 0
+    Local cChar := ""
+
+    // Garante que seja texto
+    cTexto := AllTrim(cTexto)
+
+    For nPosZ8 := 1 To Len(cTexto)
+        cChar := SubStr(cTexto, nPosZ8, 1)
+
+        If cChar $ "0123456789"
+            nNumeros++
+        ElseIf cChar $ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+            nLetras++
+        EndIf
+    Next nPosZ8
+
+    // Retorna o resultado
+    If nLetras > nNumeros
+        lRetz := .F. // mais letras
+    ElseIf nNumeros > nLetras
+        lRetz := .T. // mais números
+    EndIf
+
+Return lRetz

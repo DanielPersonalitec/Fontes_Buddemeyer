@@ -1,0 +1,702 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace custom.pedidos
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Pedido de vendas   SC5 e SC6                             !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Pedido de vendas   SC5 e SC6                             !
+! Data       ! 29/12/2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface pedInterfacepost
+Public Method New()
+Public Method getPedido() as Character
+Public Method getItem() as Character
+Public Method getQtdCan() as Numeric
+Public Method getProd() as Character
+Public Method setPedido(c)
+Public Method setItem(c)
+Public Method setQtdCan(n)
+Public Method setProd(c)
+EndInterface
+
+Interface  pedInterfaceget
+Public Method New()
+Public Method getPed() as Character
+Public Method getProd() as Character
+Public Method getCNumQuery() as Character
+Public Method getCQuant() as Character
+Public Method setPed(c)
+Public Method setProd(c)
+Public Method setCNumQuery(c)
+Public Method setCQuant(c)
+Public Method dados() as Logical
+EndInterface
+
+Interface alteraInterface
+Public Method New()
+Public Method updateC6()
+Public Method updateC5()
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class pedItenspost Implements pedInterfacepost
+    Private data cPedido as Character
+    Private data cItem as Character
+    Private data cQtdCan as Numeric
+    Private data cProd as Character
+    Private data cStatus as Character
+    Public Method New()
+    Public Method getPedido() as Character
+    Public Method getItem() as Character
+    Public Method getQtdCan() as Numeric
+    Public Method getProd() as Character
+    Public Method getStatus() as Character
+    Public Method setPedido(c)
+    Public Method setItem(c)
+    Public Method setQtdCan(n)
+    Public Method setProd(c)
+    Public Method setStatus(c)
+EndClass
+
+Class pedItensget Implements pedInterfaceget
+    Private data cPed as Character
+    Private data cProd as Character
+    Private data cNumQuery as Character
+    Private data cQuant as Character
+    Public Method New()
+    Public Method getPed() as Character
+    Public Method getProd() as Character
+    Public Method getCNumQuery() as Character
+    Public Method getCQuant() as Character
+    Public Method setPed(c)
+    Public Method setProd(c)
+    Public Method setCNumQuery(c)
+    Public Method setCQuant(c)
+    Public Method dados() as Logical
+EndClass
+
+
+Class Update From pedItenspost Implements alteraInterface
+    Public Method New()
+
+    @Post("api_pedido/updatec6")
+    Public Method updateC6()
+
+    @Post("api_pedido/updatec5")
+    Public Method updateC5()
+
+EndClass
+
+Class Consultar From pedItensget Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_pedido/consultar/:cped/:cprod/:cnumquery/:cquantidade")
+    Public Method consultar() as Logical
+
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Produto
+Method New() class pedItenspost
+Return self
+
+Method New() class Update
+Return self
+
+// Metodos GETs Post
+Method getPedido() as Character class pedItenspost
+Return ::cPedido
+Method getItem() as Character class pedItenspost
+Return ::cItem
+Method getQtdCan() as Numeric class pedItenspost
+Return ::cQtdCan
+Method getProd() as Character class pedItenspost
+Return ::cProd
+Method getStatus() as Character class pedItenspost
+Return ::cStatus
+
+// Metodos GETs get
+Method New() class pedItensget
+Return self
+Method New() class Consultar
+Return self
+Method getPed() as Character class pedItensget
+Return ::cPed
+Method getProd() as Character class pedItensget
+Return ::cProd
+Method getCNumQuery() as Character class pedItensget
+Return ::cNumQuery
+Method getCQuant() as Character class pedItensget
+Return ::cQuant
+
+// Metodos SETs post
+Method setPedido(c) class pedItenspost
+    ::cPedido := AllTrim(c)
+Return
+Method setItem(c) class pedItenspost
+    ::cItem := AllTrim(c)
+Return
+Method setQtdCan(n) class pedItenspost
+    ::cQtdCan := n
+Return
+Method setProd(c) class pedItenspost
+    ::cProd := AllTrim(c)
+Return
+Method setStatus(c) class pedItenspost
+    ::cStatus := AllTrim(c)
+Return
+
+// Metodos SETs get
+Method setPed(c) class pedItensget
+    ::cPed  := AllTrim(c)
+Return
+
+Method setProd(c) class pedItensget
+    ::cProd := AllTrim(c)
+return
+
+Method setCNumQuery(c) class pedItensget
+    ::cNumQuery := AllTrim(c)
+Return
+
+Method setCQuant(c) class pedItensget
+    ::cQuant := AllTrim(c)
+Return
+
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de pedidos                                   !
+! Data       ! 30-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+    Local cNumQuery := "" as Character
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cped"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cped"
+            jJsonItem['code'] := 1
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIF Empty(AllTrim(jPathParams["cprod"])) .AND. IIF(!Empty(AllTrim(jPathParams["cnumquery"])) , jPathParams["cnumquery"] == "02" , .F. )
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cprod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIF Empty(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+            ::setPed(jPathParams["cped"])
+            ::setProd(jPathParams["cprod"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+            IF !Empty(AllTrim(jPathParams["cquantidade"]))
+                ::setCQuant(jPathParams["cquantidade"])
+            ENDIF
+            // Busco produtos com BeginSql
+            If (Select("BPEDIDO") <> 0)
+                dbSelectArea("BPEDIDO")
+                dbCloseArea()
+            EndIf
+
+            // Chama o método dados() que já tem as queries
+            lRetorno := ::dados()
+            cNumQuery := ::getCNumQuery()
+            // Se for query múltipla, precisa fazer loop
+            If lRetorno
+                While !BPEDIDO->(Eof())
+                    jJsonItem := JsonObject():New()
+                    jJsonItem['message'] := "Registro encontrado."
+                    jJsonItem['code'] := 200
+                    IF cNumQuery <> "02"
+                        jJsonItem['item'] := AllTrim(BPEDIDO->C6_ITEM)
+                        IF cNumQuery <> "03"
+                            jJsonItem['cod'] := AllTrim(BPEDIDO->B1_COD)
+                            jJsonItem['codbar'] := AllTrim(BPEDIDO->B1_CODBAR)
+                        ENDIF
+                    ENDIF
+                    IF cNumQuery <> "03" .AND. cNumQuery <> "04"
+                        jJsonItem['barra'] := AllTrim(BPEDIDO->A7_BARRA)
+                    ENDIF
+                    IF cNumQuery == "03"
+                        jJsonItem['produto']   :=  AllTrim(BPEDIDO->C6_PRODUTO)
+                        jJsonItem['precovenda']    :=   BPEDIDO->C6_PRCVEN
+                        jJsonItem['qtdecancelada'] := BPEDIDO->C6_QTDCANC
+                        jJsonItem['qtdorigem']   :=  BPEDIDO->QTD_ORIG
+                        jJsonItem['qtdsaldo']    :=  BPEDIDO->QTD_SALDO
+                        jJsonItem['descricao'] := AllTrim(BPEDIDO->C6_DESCRI)
+                        jJsonItem['local']   :=   AllTrim(BPEDIDO->C6_LOCAL)
+                        jJsonItem['qtdatual']   :=   BPEDIDO->B2_QATU
+                    ENDIF
+                    IF cNumQuery == "04"
+                        // C6_ITEM,
+                        //B1_COD,
+                        //B1_CODBAR,
+                        jJsonItem['pedido']   :=  AllTrim(BPEDIDO->C5_NUM)
+                        jJsonItem['unidademedida']    :=   AllTrim(BPEDIDO->B1_UM)
+                        jJsonItem['descricao'] := AllTrim(BPEDIDO->B1_DESC)
+                        jJsonItem['local']   :=  AllTrim(BPEDIDO->C6_LOCAL)
+                        jJsonItem['qtdpacote']    :=  BPEDIDO->Z7_QTDPCT
+                        jJsonItem['qtdvendida'] := BPEDIDO->C6_QTDVEN
+                        jJsonItem['estoque']   :=   BPEDIDO->ESTOQUE
+                    ENDIF
+
+                    aAdd(oRetorno["retorno"], jJsonItem)
+                    BPEDIDO->(DBSkip())
+                End
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 5
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+        ENDIF
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 4
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+/*
+/==================================================================================\
+|Nome              : dados                                                         |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do pedItensget               |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 30/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class pedItensget
+
+    Local cPed := ::getPed() as Character
+    Local cProd := ::getProd() as Character
+    Local cNumQuery := ::getCNumQuery() as Character
+    Local cQuant := ::getCQuant() as Character
+    Local lRetorno := .F. as Logical
+
+    // Busco o produto
+    If (Select("BPEDIDO") <> 0)
+        dbSelectArea("BPEDIDO")
+        dbCloseArea()
+    EndIf
+
+    BPEDIDO := Getnextalias()
+
+    IF  cNumQuery == "01"
+        //01 - C6_ITEM, B1_COD, B1_CODBAR, A7_BARRA
+        BeginSql alias 'BPEDIDO'
+            SELECT
+                TOP 500 C6_ITEM,
+                B1_COD,
+                B1_CODBAR,
+                A7_BARRA
+            FROM
+                %Table:SC6% (NOLOCK)
+            INNER JOIN %Table:SA7% (NOLOCK)
+            ON A7_FILIAL = ''
+                AND A7_CLIENTE = C6_CLI
+                AND A7_LOJA = C6_LOJA
+                AND A7_PRODUTO = C6_PRODUTO
+                AND SA7010.%notDel%
+            INNER JOIN %Table:SB1% (NOLOCK)
+            ON B1_FILIAL = ''
+                AND B1_COD = C6_PRODUTO
+                AND %Table:SB1%.%notDel%
+            WHERE
+                C6_FILIAL = '01'
+                AND C6_NUM = %Exp:cPed%
+                AND A7_BARRA <> ''
+                AND %Table:SC6%.%notDel%
+        EndSql
+        lRetorno := .T.
+    ELSEIF cNumQuery == "02"
+
+        BeginSql alias 'BPEDIDO'  //02 - A7_BARRA
+            SELECT
+                TOP 1 A7_BARRA
+            FROM
+                %Table:SC6% (NOLOCK)
+            INNER JOIN %Table:SA7% (NOLOCK)
+            ON A7_FILIAL = ''
+                AND A7_CLIENTE = C6_CLI
+                AND A7_LOJA = C6_LOJA
+                AND A7_PRODUTO = C6_PRODUTO
+                AND %Table:SA7%.%notDel%
+            INNER JOIN %Table:SB1% (NOLOCK)
+            ON B1_FILIAL = ''
+                AND B1_COD = C6_PRODUTO
+                AND %Table:SB1%.%notDel%
+            WHERE
+                C6_FILIAL = '01'
+                AND C6_NUM = %Exp:cPed%
+                AND C6_PRODUTO = %Exp:cProd%
+                AND A7_BARRA <> ''
+                AND %Table:SC6%.%notDel%
+        EndSql
+        lRetorno := .T.
+    ELSEIF cNumQuery == "03"
+        // 03 -  DISTINCT C6_ITEM,C6_PRODUTO,C6_PRCVEN,C6_QTDCANC,(C6_QTDVEN - C6_QTDENT - C6_QTDCANC) AS QTD_ORIG,%Exp:cQuantidade% AS QTD_SALDO,C6_DESCRI,C6_LOCAL,SB2.B2_QATU
+        IF Empty(AllTrim(cQuant))
+            cQuant := "%0%"
+        ELSE
+            cQuant := "%"+cQuant+"%"
+        ENDIF
+        BeginSql Alias "BPEDIDO"
+            SELECT
+                DISTINCT C6_ITEM,
+                C6_PRODUTO,
+                C6_PRCVEN,
+                C6_QTDCANC,
+                (C6_QTDVEN - C6_QTDENT - C6_QTDCANC) AS QTD_ORIG,
+                %Exp:cQuant% AS QTD_SALDO,
+                C6_DESCRI,
+                C6_LOCAL,
+                B2_QATU
+            FROM
+                %Table:SC6% (NOLOCK)
+            LEFT JOIN %Table:SB2% (NOLOCK)
+            ON B2_FILIAL = '01'
+                AND B2_COD = C6_PRODUTO
+                AND B2_LOCAL = C6_LOCAL
+                AND %Table:SB2%.%notDel%
+            WHERE
+                %Table:SC6%.%notDel%
+                AND C6_NUM = %Exp:cPed%
+                AND C6_FILIAL = '01'
+        EndSql
+        lRetorno := .T.
+    ELSEIF cNumQuery == "04"
+        //04  C6_ITEM,B1_COD,B1_CODBAR,B1_UM,B1_DESC,C6_LOCAL,Z7_QTDPCT,(C6_QTDVEN - C6_QTDCANC) AS C6_QTDVEN,ISNULL((B2_QATU - B2_QEMP - B2_AEMPENH - B2_RESERVA), 0) AS ESTOQUE
+        BeginSql Alias "BPEDIDO"
+            SELECT
+                DISTINCT C5_NUM,
+                C6_ITEM,
+                B1_COD,
+                B1_CODBAR,
+                B1_UM,
+                B1_DESC,
+                C6_LOCAL,
+                Z7_QTDPCT,
+                (C6_QTDVEN - C6_QTDCANC) AS C6_QTDVEN,
+                ISNULL((B2_QATU - B2_QEMP - B2_AEMPENH - B2_RESERVA), 0) AS ESTOQUE
+            FROM
+                %Table:SC5% (NOLOCK)
+            INNER JOIN %Table:SC6% (NOLOCK)
+            ON C6_FILIAL = C5_FILIAL
+                AND C6_NUM = C5_NUM
+                AND %Table:SC6%.%notDel%
+            INNER JOIN %Table:SB1% (NOLOCK)
+            ON B1_FILIAL = ''
+                AND B1_COD = C6_PRODUTO
+                AND %Table:SB1%.%notDel%
+            LEFT JOIN %Table:SZ7% (NOLOCK)
+            ON Z7_FILIAL = ''
+                AND Z7_COD = B1_CODMOD
+                AND %Table:SZ7%.%notDel%
+            INNER JOIN %Table:SA1% (NOLOCK)
+            ON A1_FILIAL = ''
+                AND A1_COD = C5_CLIENTE
+                AND A1_LOJA = C5_LOJACLI
+                AND %Table:SA1%.%notDel%
+            LEFT JOIN %Table:SB2% (NOLOCK)
+            ON B2_FILIAL = '01'
+                AND B2_COD = B1_COD
+                AND B2_LOCAL = C6_LOCAL
+                AND B2_QATU > 0
+                AND %Table:SB2%.%notDel%
+            WHERE
+                C5_FILIAL = '01'
+                AND LEFT(C5_NUM, 2) = 'NP'
+                AND (
+                    C5_TIPOCLI = 'X'
+                    OR A1_CGC = '18476908000131'
+                )
+                AND (C6_QTDVEN - C6_QTDCANC - C6_QTDENT) > 0
+                AND C5_NUM = %Exp:cPed%
+                AND %Table:SC5%.%notDel%
+        EndSql
+        lRetorno := .T.
+    ENDIF
+
+    IF  lRetorno
+        // Se existir o produto
+        If BPEDIDO->(Eof())
+            lRetorno := .F.
+        EndIf
+    EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+|Nome              : UpdateC6 pedItenspost na tabela SC6                           |
+|==================================================================================|
+|Descricao         : Este metodo atualiza pedItenspost na tabela sc6               |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 29/12/2025                                                    |
+\==================================================================================/
+*/
+Method updateC6()  class Update
+
+    Local cBody := "" as Character
+    Local cPed := "" as Character
+    Local cItem := "" as Character
+    Local oBody := JsonObject():new()
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+    cBody := oRest:getBodyRequest()
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    IF cBody $ "pedido/item/produto/qtdcan" .OR. oBody:HasProperty("pedido") .OR. oBody:HasProperty("item") .OR. oBody:HasProperty("produto") .OR. oBody:HasProperty("qtdcan")
+
+        If !oBody:HasProperty("pedido")
+            jJsonItem['code'] := 1
+            jJsonItem['message'] := "O campo (pedido) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf !oBody:HasProperty("item")
+            jJsonItem['code'] := 2
+            jJsonItem['message'] := "O campo (item) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf !oBody:HasProperty("produto")
+            jJsonItem['code'] := 3
+            jJsonItem['message'] := "O campo (produto) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf !oBody:HasProperty("qtdcan")
+            jJsonItem['code'] := 4
+            jJsonItem['message'] := "O campo (qtdcan) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        else
+            // Recebe as informacoes
+            ::setPedido(oBody["pedido"])
+            ::setItem(oBody["item"])
+            ::setQtdCan(oBody["qtdcan"])
+            ::setProd(oBody["produto"])
+
+            cPed := ::getPedido()
+            cItem := ::getItem()
+            cQtdCan := ::getQtdCan()
+            cProd := ::getProd()
+            jJsonItem := JsonObject():New()
+
+            If Empty(::getPedido())
+                jJsonItem['code'] := 5
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: pedido."
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf Empty(::getItem())
+                jJsonItem['code'] := 6
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: item."
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf Empty(::getQtdCan())
+                jJsonItem['code'] := 7
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: quantidade cancelada."
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf ValType(cQtdCan) <> "N"
+                jJsonItem['code'] := 11
+                jJsonItem['message'] := "Valor enviado no campo quantidade cancelada nao e numerico."
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf Empty(::getProd())
+                jJsonItem['code'] := 8
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: produto."
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ELSE
+
+                DBSelectArea("SC6")
+                SC6->(DBSetOrder(1))
+                If dbSeek(xFilial("SC6") + padr(alltrim(cPed),tamsx3("C6_NUM")[1])+ padr(alltrim(cItem),tamsx3("C6_ITEM")[1])+ padr(alltrim(cProd),tamsx3("C6_PRODUTO")[1]))
+
+                    RecLock("SC6", .F.)
+                    SC6->C6_QTDCANC    := cQtdCan
+                    SC6->(MsUnLock())
+
+                    jJsonItem['code'] := 200
+                    jJsonItem['message'] := "Quantidade cancelada alterada com sucesso para o pedido: " + AllTrim(SC6->C6_NUM) + " item: " + ALLTRIM(SC6->C6_ITEM)
+                    jJsonItem['pedido'] := SC6->C6_NUM
+                    jJsonItem['item'] := SC6->C6_ITEM
+                    jJsonItem['qtdCanc'] := SC6->C6_QTDCANC
+                    Aadd(oRetorno["retorno"], jJsonItem)
+
+                ELSE
+                    jJsonItem['code'] := 9
+                    jJsonItem['message'] := "Nao foi posivel posicionar no pedido, item nao alterado."
+                    Aadd(oRetorno["retorno"], jJsonItem)
+                ENDIF
+                SC6->(DBCloseArea())
+            ENDIF
+        ENDIF
+    ELSE
+        jJsonItem['code'] := 10
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        aAdd(oRetorno["retorno"], jJsonItem)
+    ENDIF
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return oRest
+
+/*
+/==================================================================================\
+|Nome              : Method updateC5()  class Update pedItenspost na tabela sc5        |
+|==================================================================================|
+|Descricao         : Este metodo atualiza pedItenspost na tabela sc5                   |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 12/01/2025                                                    |
+\==================================================================================/
+*/
+
+Method updateC5()  class Update
+
+    Local cBody := "" as Character
+    Local cPed := "" as Character
+    Local cStatus := "" as Character
+    Local oBody := JsonObject():new()
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+    cBody := oRest:getBodyRequest()
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    IF cBody $ "pedido/status" .OR. oBody:HasProperty("pedido") .OR. oBody:HasProperty("status")
+
+        If !oBody:HasProperty("pedido")
+            jJsonItem['code'] := 1
+            jJsonItem['message'] := "O campo (pedido) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf !oBody:HasProperty("status")
+            jJsonItem['code'] := 2
+            jJsonItem['message'] := "O campo (status) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        else
+            // Recebe as informacoes
+            ::setPedido(oBody["pedido"])
+            ::setStatus(oBody["status"])
+            cPed := ::getPedido()
+            cStatus := ::getStatus()
+            jJsonItem := JsonObject():New()
+
+            If Empty(cPed)
+                jJsonItem['code'] := 3
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: pedido"
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf Empty(cStatus)
+                jJsonItem['code'] := 4
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: status"
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ELSE
+
+                DBSelectArea("SC5")
+                SC5->(DBSetOrder(1))
+                If  SC5->(dbSeek("01" + padr(alltrim(cPed),tamsx3("C5_NUM")[1]))) //xFilial("SC5") chumbado pois na query estava assim
+
+                    RecLock("SC5", .F.)
+                    SC5->C5_STLOGIS = cStatus
+                    SC5->(MsUnLock())
+
+                    jJsonItem['code'] := 200
+                    jJsonItem['message'] := "Status alterado com sucesso para o pedido: " + AllTrim(SC5->C5_NUM)
+                    jJsonItem['pedido'] := SC5->C5_NUM
+                    jJsonItem['status'] := alltrim(SC5->C5_STLOGIS)
+                    Aadd(oRetorno["retorno"], jJsonItem)
+
+                ELSE
+                    jJsonItem['code'] := 5
+                    jJsonItem['message'] := "Pedido nao encontrado!"
+                    Aadd(oRetorno["retorno"], jJsonItem)
+                ENDIF
+                SC5->(DBCloseArea())
+            ENDIF
+        ENDIF
+    ELSE
+        jJsonItem['code'] := 6
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        aAdd(oRetorno["retorno"], jJsonItem)
+    ENDIF
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+Return oRest
+
+
+
+

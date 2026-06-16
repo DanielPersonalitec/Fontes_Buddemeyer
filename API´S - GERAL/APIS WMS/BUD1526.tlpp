@@ -1,0 +1,543 @@
+#Include "Tlpp-Rest.th"
+#Include "tlpp-core.th"
+
+namespace faturamento
+
+/*
+/============================================================================\
+|Nome              : API faturamento Documento de Devolução.                 |
+|============================================================================|
+|Descricao         : API que realiza as operacoes devolução do faturamento   |
+|============================================================================|
+|Responsavel       : Daniel Victor da Rosa                                   |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 19/05/2026                                              |
+\============================================================================/
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface FaturamentoInterface
+
+Public Method New()
+
+Public Method getFornecedor() as Character
+Public Method getLojaFornecedor() as Character
+Public Method getItensOrigem() as Array
+Public Method getNfOrigem() as Character
+Public Method getSerieOrigem() as Character
+Public Method getIdentB6() as Character
+Public Method getValorUnitario() as Double
+Public Method getValorTotal() as Double
+Public Method getQuantidade() as Double
+Public Method getItemOrigem() as Character
+Public Method getItemProdutoOrigem() as Character
+Public Method getSerieNf() as Character
+Public Method getTes() as Character
+Public Method getCf() as Character
+Public Method getTipo() as Character
+Public Method getFormul() as Character
+Public Method getEspecie() as Character
+Public Method getCondicaoPag() as Character
+
+Public Method setFornecedor(c)
+Public Method setLojaFornecedor(c)
+Public Method setItensOrigem(a)
+Public Method setNfOrigem(c)
+Public Method setSerieOrigem(c)
+Public Method setIdentB6(c)
+Public Method setValorUnitario(e)
+Public Method setValorTotal(e)
+Public Method setQuantidade(e)
+Public Method setItemOrigem(c)
+Public Method setItemProdutoOrigem(c)
+Public Method setSerieNf(c)
+Public Method setTes(c)
+Public Method setCf(c)
+Public Method setTipo(c)
+Public Method setFormul(c)
+Public Method setEspecie(c)
+Public Method setCondicaoPag(c)
+
+EndInterface
+
+Interface CadastrarInterface
+Public Method New()
+Public Method cadastrar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class NotaDevolucao Implements FaturamentoInterface
+
+	Private Data cFornecedor as Character
+	Private Data cLojaFornecedor as Character
+	Private Data aItensOrigem as Array
+	Private Data cNfOrigem as Character
+	Private Data cSerieOrigem as Character
+	Private Data cIdentB6 as Character
+	Private Data eValorUnitario as Double
+	Private Data eValorTotal as Double
+	Private Data eQuantidade as Double
+	Private Data cItemOrigem as Character
+	Private Data cItemProdutoOrigem as Character
+	Private Data cSerieNf as Character
+	Private Data cTes as Character
+	Private Data cCf as Character
+	Private Data cTipo as Character
+	Private Data cFormul as Character
+	Private Data cEspecie as Character
+	Private Data cCondicaoPag as Character
+
+	Public Method New()
+
+	Public Method getFornecedor() as Character
+	Public Method getLojaFornecedor() as Character
+	Public Method getItensOrigem() as Array
+	Public Method getNfOrigem() as Character
+	Public Method getSerieOrigem() as Character
+	Public Method getIdentB6() as Character
+	Public Method getValorUnitario() as Double
+	Public Method getValorTotal() as Double
+	Public Method getQuantidade() as Double
+	Public Method getItemOrigem() as Character
+	Public Method getItemProdutoOrigem() as Character
+	Public Method getSerieNf() as Character
+	Public Method getTes() as Character
+	Public Method getCf() as Character
+	Public Method getTipo() as Character
+	Public Method getFormul() as Character
+	Public Method getEspecie() as Character
+	Public Method getCondicaoPag() as Character
+
+	Public Method setFornecedor(c)
+	Public Method setLojaFornecedor(c)
+	Public Method setItensOrigem(a)
+	Public Method setNfOrigem(c)
+	Public Method setSerieOrigem(c)
+	Public Method setIdentB6(c)
+	Public Method setValorUnitario(e)
+	Public Method setValorTotal(e)
+	Public Method setQuantidade(e)
+	Public Method setItemOrigem(c)
+	Public Method setItemProdutoOrigem(c)
+	Public Method setSerieNf(c)
+	Public Method setTes(c)
+	Public Method setCf(c)
+	Public Method setTipo(c)
+	Public Method setFormul(c)
+	Public Method setEspecie(c)
+	Public Method setCondicaoPag(c)
+
+EndClass
+
+
+Class Cadastrar From NotaDevolucao Implements CadastrarInterface
+
+	Public Method New()
+
+	@Post("/api_faturamento/cadastrar/notadevolucao")
+	Public Method cadastrar() as Logical
+
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe NotaDevolucao
+Method New() Class NotaDevolucao
+Return Self
+
+// Metodo construtor da classe Cadastrar
+Method New() Class Cadastrar
+	_Super:New()
+Return Self
+
+// Metodos GETs
+Method getFornecedor() as Character Class NotaDevolucao
+Return ::cFornecedor
+Method getLojaFornecedor() as Character Class NotaDevolucao
+Return ::cLojaFornecedor
+Method getItensOrigem() as Array Class NotaDevolucao
+Return ::aItensOrigem
+Method getNfOrigem() as Character Class NotaDevolucao
+Return ::cNfOrigem
+Method getSerieOrigem() as Character Class NotaDevolucao
+Return ::cSerieOrigem
+Method getIdentB6() as Character Class NotaDevolucao
+Return ::cIdentB6
+Method getValorUnitario() as Double Class NotaDevolucao
+Return ::eValorUnitario
+Method getValorTotal() as Double Class NotaDevolucao
+Return ::eValorTotal
+Method getQuantidade() as Double Class NotaDevolucao
+Return ::eQuantidade
+Method getItemOrigem() as Character Class NotaDevolucao
+Return ::cItemOrigem
+Method getItemProdutoOrigem() as Character Class NotaDevolucao
+Return ::cItemProdutoOrigem
+Method getSerieNf() as Character Class NotaDevolucao
+Return ::cSerieNf
+Method getTes() as Character Class NotaDevolucao
+Return ::cTes
+Method getCf() as Character Class NotaDevolucao
+Return ::cCf
+Method getTipo() as Character Class NotaDevolucao
+Return ::cTipo
+Method getFormul() as Character Class NotaDevolucao
+Return ::cFormul
+Method getEspecie() as Character Class NotaDevolucao
+Return ::cEspecie
+Method getCondicaoPag() as Character Class NotaDevolucao
+Return ::cCondicaoPag
+
+// Metodos SETs
+Method setFornecedor(c) Class NotaDevolucao
+	::cFornecedor := AllTrim(c)
+Return
+Method setLojaFornecedor(c) Class NotaDevolucao
+	::cLojaFornecedor := AllTrim(c)
+Return
+Method setItensOrigem(a) Class NotaDevolucao
+	::aItensOrigem := a
+Return
+Method setNfOrigem(c) Class NotaDevolucao
+	::cNfOrigem := AllTrim(c)
+Return
+Method setSerieOrigem(c) Class NotaDevolucao
+	::cSerieOrigem := AllTrim(c)
+Return
+Method setIdentB6(c) Class NotaDevolucao
+	::cIdentB6 := AllTrim(c)
+Return
+Method setValorUnitario(e) Class NotaDevolucao
+	::eValorUnitario := e
+Return
+Method setValorTotal(e) Class NotaDevolucao
+	::eValorTotal := e
+Return
+Method setQuantidade(e) Class NotaDevolucao
+	::eQuantidade := e
+Return
+Method setItemOrigem(c) Class NotaDevolucao
+	::cItemOrigem := AllTrim(c)
+Return
+Method setItemProdutoOrigem(c) Class NotaDevolucao
+	::cItemProdutoOrigem := AllTrim(c)
+Return
+Method setSerieNf(c) Class NotaDevolucao
+	::cSerieNf := AllTrim(c)
+Return
+Method setTes(c) Class NotaDevolucao
+	::cTes := AllTrim(c)
+Return
+Method setCf(c) Class NotaDevolucao
+	::cCf := AllTrim(c)
+Return
+Method setTipo(c) Class NotaDevolucao
+	::cTipo := AllTrim(c)
+Return
+Method setFormul(c) Class NotaDevolucao
+	::cFormul := AllTrim(c)
+Return
+Method setEspecie(c) Class NotaDevolucao
+	::cEspecie := AllTrim(c)
+Return
+Method setCondicaoPag(c) Class NotaDevolucao
+	::cCondicaoPag := AllTrim(c)
+Return
+
+/* ----------------------------------------- */
+
+/*
+/==================================================================================\
+|Nome              : Cadastrar NotaDevolucao                                       |
+|==================================================================================|
+|Descricao         : Este metodo realiza o cadastro de notas de devolucao          |
+|                  : em poder de terceiro                                          |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 19/05/2026                                                    |
+\==================================================================================/
+*/
+
+Method cadastrar() as Logical Class Cadastrar
+
+	// Declara as variaveis
+	Local lMsErroAuto := .F. as Logical
+	Local lRetorno    := .T. as Logical
+
+	Local iX := 0 as Integer
+	Local iY := 0 as Integer
+
+	Local dDataNf := Date() as Date
+
+	Local cDocNf      := "" as Character
+	Local cAutoDeleta := "N" as Character
+	Local cRetorno    := "" as Character
+	Local cBody       := "" as Character
+
+	Local aAutoErro := {} as Array
+	Local aCabec    := {} as Array
+	Local aItens    := {} as Array
+	Local aLinha    := {} as Array
+
+	Local oBody := JsonObject():New()
+
+	Public oRetorno  := JsonObject():New() as Object
+	Public jJsonItem := JsonObject():New() as Json
+
+	_Super:New() 
+	oRetorno["retorno"] := {}
+
+	cBody := oRest:getBodyRequest()
+	oBody:fromJson(DecodeUTF8(cBody))
+
+	For iX := 1 To Len(oBody)
+
+		lRetorno := .T.
+		aCabec   := {}
+		aItens   := {}
+		jJsonItem := JsonObject():New()
+
+		If !oBody[iX]:HasProperty("fwfornecedor") .OR. Empty(oBody[iX]["fwfornecedor"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwfornecedor) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 1
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwlojafornecedor") .OR. Empty(oBody[iX]["fwlojafornecedor"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwlojafornecedor) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 2
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwitensorigem")
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwitensorigem) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 3
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwnforigem") .OR. Empty(oBody[iX]["fwnforigem"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwnforigem) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 4
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwserieorigem") .OR. Empty(oBody[iX]["fwserieorigem"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwserieorigem) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 5
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwidentb6") .OR. Empty(oBody[iX]["fwidentb6"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwidentb6) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 6
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwserienf") .OR. Empty(oBody[iX]["fwserienf"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwserienf) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 7
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwtes") .OR. Empty(oBody[iX]["fwtes"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwtes) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 8
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwcf") .OR. Empty(oBody[iX]["fwcf"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwcf) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 9
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwtipo") .OR. Empty(oBody[iX]["fwtipo"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwtipo) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 10
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwformul") .OR. Empty(oBody[iX]["fwformul"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwformul) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 11
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwespecie") .OR. Empty(oBody[iX]["fwespecie"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwespecie) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 12
+			lRetorno             := .F.
+
+		ElseIf !oBody[iX]:HasProperty("fwcondicaopag") .OR. Empty(oBody[iX]["fwcondicaopag"])
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "O campo (fwcondicaopag) e obrigatorio e nao pode ser vazio!"
+			jJsonItem["code"]    := 13
+			lRetorno             := .F.
+
+		ElseIf Len(oBody[iX]["fwitensorigem"]) == 0
+			jJsonItem["item"]    := iX
+			jJsonItem["message"] := "Nenhum item foi enviado em (fwitensorigem)!"
+			jJsonItem["code"]    := 14
+			lRetorno             := .F.
+
+		EndIf
+
+		If lRetorno
+			For iY := 1 To Len(oBody[iX]["fwitensorigem"])
+
+				If !oBody[iX]["fwitensorigem"][iY]:HasProperty("fwquantidade")
+					jJsonItem["item"]    := iX
+					jJsonItem["subitem"] := iY
+					jJsonItem["message"] := "O campo (fwquantidade) e obrigatorio"
+					jJsonItem["code"]    := 15
+					lRetorno             := .F.
+					Exit
+
+				ElseIf !oBody[iX]["fwitensorigem"][iY]:HasProperty("fwvalorunitario")
+					jJsonItem["item"]    := iX
+					jJsonItem["subitem"] := iY
+					jJsonItem["message"] := "O campo (fwvalorunitario) e obrigatorio"
+					jJsonItem["code"]    := 16
+					lRetorno             := .F.
+					Exit
+
+				ElseIf !oBody[iX]["fwitensorigem"][iY]:HasProperty("fwvalortotal")
+					jJsonItem["item"]    := iX
+					jJsonItem["subitem"] := iY
+					jJsonItem["message"] := "O campo (fwvalortotal) e obrigatorio"
+					jJsonItem["code"]    := 17
+					lRetorno             := .F.
+					Exit
+
+				ElseIf !oBody[iX]["fwitensorigem"][iY]:HasProperty("fwitemorigem") .OR. Empty(oBody[iX]["fwitensorigem"][iY]["fwitemorigem"])
+					jJsonItem["item"]    := iX
+					jJsonItem["subitem"] := iY
+					jJsonItem["message"] := "O campo (fwitemorigem) e obrigatorio e nao pode ser vazio!"
+					jJsonItem["code"]    := 18
+					lRetorno             := .F.
+					Exit
+
+				ElseIf !oBody[iX]["fwitensorigem"][iY]:HasProperty("fwitemprodutoorigem") .OR. Empty(oBody[iX]["fwitensorigem"][iY]["fwitemprodutoorigem"])
+					jJsonItem["item"]    := iX
+					jJsonItem["subitem"] := iY
+					jJsonItem["message"] := "O campo (fwitemprodutoorigem) e obrigatorio e nao pode ser vazio!"
+					jJsonItem["code"]    := 19
+					lRetorno             := .F.
+					Exit
+
+				EndIf
+
+			Next iY
+		EndIf
+
+		If lRetorno
+			::setFornecedor(oBody[iX]["fwfornecedor"])
+			::setLojaFornecedor(oBody[iX]["fwlojafornecedor"])
+			::setItensOrigem(oBody[iX]["fwitensorigem"])
+			::setNfOrigem(oBody[iX]["fwnforigem"])
+			::setSerieOrigem(oBody[iX]["fwserieorigem"])
+			::setIdentB6(oBody[iX]["fwidentb6"])
+			::setSerieNf(oBody[iX]["fwserienf"])
+			::setTes(oBody[iX]["fwtes"])
+			::setCf(oBody[iX]["fwcf"])
+			::setTipo(oBody[iX]["fwtipo"])
+			::setFormul(oBody[iX]["fwformul"])
+			::setEspecie(oBody[iX]["fwespecie"])
+			::setCondicaoPag(oBody[iX]["fwcondicaopag"])
+
+			cDocNf := GetSxeNum("SF1", "F1_DOC")
+
+			aAdd(aCabec, {"F1_TIPO",    ::getTipo(),           Nil})
+			aAdd(aCabec, {"F1_FORMUL",  ::getFormul(),         Nil})
+			aAdd(aCabec, {"F1_DOC",     cDocNf,                Nil})
+			aAdd(aCabec, {"F1_SERIE",   ::getSerieNf(),        Nil})
+			aAdd(aCabec, {"F1_EMISSAO", dDataNf,               Nil})
+			aAdd(aCabec, {"F1_FORNECE", ::getFornecedor(),     Nil})
+			aAdd(aCabec, {"F1_LOJA",    ::getLojaFornecedor(), Nil})
+			aAdd(aCabec, {"F1_ESPECIE", ::getEspecie(),        Nil})
+			aAdd(aCabec, {"F1_COND",    ::getCondicaoPag(),    Nil})
+
+			For iY := 1 To Len(::getItensOrigem())
+
+				aLinha := {}
+
+				::setQuantidade(::getItensOrigem()[iY]["fwquantidade"])
+				::setValorUnitario(::getItensOrigem()[iY]["fwvalorunitario"])
+				::setValorTotal(::getItensOrigem()[iY]["fwvalortotal"])
+				::setItemOrigem(::getItensOrigem()[iY]["fwitemorigem"])
+				::setItemProdutoOrigem(::getItensOrigem()[iY]["fwitemprodutoorigem"])
+
+				aAdd(aLinha, {"D1_ITEM",    StrZero(iY, 3),           Nil})
+				aAdd(aLinha, {"D1_COD",     ::getItemProdutoOrigem(),  Nil})
+				aAdd(aLinha, {"D1_QUANT",   ::getQuantidade(),         Nil})
+				aAdd(aLinha, {"D1_VUNIT",   ::getValorUnitario(),      Nil})
+				aAdd(aLinha, {"D1_TOTAL",   ::getValorTotal(),         Nil})
+				aAdd(aLinha, {"D1_TES",     ::getTes(),                Nil})
+				aAdd(aLinha, {"D1_CF",      ::getCf(),                 Nil})
+				aAdd(aLinha, {"D1_DOC",     cDocNf,                    Nil})
+				aAdd(aLinha, {"D1_SERIE",   ::getSerieNf(),            Nil})
+				aAdd(aLinha, {"D1_EMISSAO", dDataNf,                   Nil})
+				aAdd(aLinha, {"D1_NFORI",   ::getNfOrigem(),           Nil})
+				aAdd(aLinha, {"D1_SERIORI", ::getSerieOrigem(),        Nil})
+				aAdd(aLinha, {"D1_ITEMORI", ::getItemOrigem(),         Nil})
+				aAdd(aLinha, {"D1_IDENTB6", ::getIdentB6(),            Nil})
+				aAdd(aLinha, {"AUTDELETA",  cAutoDeleta,               Nil})
+				aAdd(aItens, aLinha)
+
+			Next iY
+
+			lMsErroAuto := .F.
+
+			MSExecAuto({|x,y,z| Mata103(x,y,z)}, aCabec, aItens, 3)
+
+			If !lMsErroAuto
+				jJsonItem["message"]  := "Documento de devolucao incluido com sucesso."
+				jJsonItem["code"]     := 200
+				jJsonItem["F1_DOC"]   := cDocNf
+				jJsonItem["F1_SERIE"] := ::getSerieNf()
+				jJsonItem["D1_NFORI"] := ::getNfOrigem()
+			Else
+				jJsonItem["message"]  := "Documento de devolucao nao incluido"
+				jJsonItem["code"]     := 400
+				jJsonItem["F1_DOC"]   := ""
+				jJsonItem["F1_SERIE"] := ""
+				jJsonItem["D1_NFORI"] := ::getNfOrigem()
+			EndIf
+		EndIf
+
+		aAdd(oRetorno["retorno"], jJsonItem)
+		ConOut("[API FATURAMENTO] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+	Next iX
+
+	Begin Sequence
+
+		oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+		oRest:setStatusCode(200)
+
+		Recover
+
+		oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+		oRest:setStatusCode(500)
+
+	End Sequence
+
+Return .T.

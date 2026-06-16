@@ -1,0 +1,297 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace custom.recursos
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Recursos/ Custos                                         !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Recursos/ Custos                                         !
+! Data       ! 20-01-2026                                                   !
++------------+--------------------------------------------------------------+
+Fontes:
+app\desenv\ajax\ajaxRecursos.php
+app\desenv\custos.php
+
+tabela:SH1010
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface RecursoInterface
+Public Method New()
+
+Public Method getCod() as Character
+Public Method getDescri() as Character
+Public Method getUEP() as Numeric
+Public Method getCust() as Character
+Public Method getCNumQuery() as Character
+
+Public Method setCod(c)
+Public Method setDescri(c)
+Public Method setUEP(c)
+Public Method setCust(c)
+Public Method setCNumQuery(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Recurso Implements RecursoInterface
+
+    Private data cCod as Character
+    Private data cDescri as Character
+    Private data cUEP as Numeric
+    Private data cCust as Character
+    Private data cCNumQuery as Character
+
+    Public Method New()
+    Public Method getCod() as Character
+    Public Method getDescri() as Character
+    Public Method getUEP() as Numeric
+    Public Method getCust() as Character
+    Public Method getCNumQuery() as Character
+
+    Public Method setCod(c)
+    Public Method setDescri(c)
+    Public Method setUEP(c)
+    Public Method setCust(c)
+    Public Method setCNumQuery(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From Recurso Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_recursos/consultar/:cod/:cnumquery")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Recurso
+Method New() class Recurso
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCod() as Character class Recurso
+Return ::cCod
+
+Method getDescri() as Character class Recurso
+Return ::cDescri
+
+Method getUEP() as Numeric class Recurso
+Return ::cUEP
+
+Method getCust() as Character class Recurso
+Return ::cCust
+
+Method getCNumQuery() as Character class Recurso
+Return ::cCNumQuery
+
+// Metodos SETs
+
+Method setCod(c) class Recurso
+    ::cCod := AllTrim(c)
+Return
+
+Method setDescri(c) class Recurso
+    ::cDescri := AllTrim(c)
+Return
+
+Method setUEP(c) class Recurso
+    ::cUEP := c
+Return
+
+Method setCust(c) class Recurso
+    ::cCust := AllTrim(c)
+Return
+
+Method setCNumQuery(c) class Recurso
+    ::cCNumQuery := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do Recurso                  |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 20/01/2026                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Recurso
+
+    Local cCod := ::getCod() as Character
+    Local cCNumQuery := ::getCNumQuery() as Character
+    Local lRetorno := .F. as Logical
+    Local _cFiltro := "" as character
+
+    // Busco o Recurso
+    If (Select("BRECURSO") <> 0)
+        dbSelectArea("BRECURSO")
+        dbCloseArea()
+    EndIf
+
+    if !empty(alltrim(cFilH1)) .AND. cCNumQuery == "2"
+        _cFiltro += "AND (H1_CODIGO LIKE '%"+cFilH1+"%' OR H1_DESCRI LIKE '%"+cFilH1+"%')"
+    endif
+
+    _cFiltro := "%" + _cFiltro + "%"
+
+    If cCNumQuery == "1"
+        BeginSql alias 'BRECURSO'
+            SELECT
+                SH1.H1_UEP,
+                SH1.H1_CCUSTO
+            FROM  %Table:SH1% (NOLOCK) SH1
+            WHERE SH1.H1_CODIGO = %Exp:cCod%
+            AND (SH1.H1_FILIAL = '01' OR SH1.H1_FILIAL = '') //AND (SH1.H1_FILIAL = %xFilial:SH1% OR SH1.H1_FILIAL = '')
+            AND SH1.%notDel%
+        EndSql
+    elseif cCNumQuery == "2"
+        BeginSql alias 'BRECURSO'
+            SELECT TOP 200
+                SH1.H1_CODIGO,
+                SH1.H1_DESCRI
+            FROM  %Table:SH1% (NOLOCK) SH1
+            WHERE SH1.%notDel%
+            AND (H1_FILIAL = '01' OR H1_FILIAL = '')
+            AND H1_CCUSTO IN ('71180', '71181', '71160', '71161', '71190', '71191')  //AND (SH1.H1_FILIAL = %xFilial:SH1% OR SH1.H1_FILIAL = '')
+            AND LEN(H1_CODIGO) >= 4
+            %exp:_cFiltro%
+        EndSql
+    endif
+
+    // Se existir o Recurso
+    If !BRECURSO->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While BRECURSO->(!eof())
+        jJsonItem := JsonObject():New()
+
+        if cCNumQuery == "1"
+            ::setUEP(BRECURSO->H1_UEP)
+            ::setCust(BRECURSO->H1_CCUSTO)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['UEP'] := ::getUEP()
+            jJsonItem['CentroCust'] := ::getCust()
+
+        elseif cCNumQuery == "2"
+            ::setCod(BRECURSO->H1_CODIGO)
+            ::setDescri(BRECURSO->H1_DESCRI)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['codigo'] := ::getCod()
+            jJsonItem['descricao'] := ::getDescri()
+        endif
+
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        BRECURSO->(dbskip())
+
+    enddo
+
+    BRECURSO->(DbCloseArea())
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de Recursoes                                !
+! Data       ! 15-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Private cFilH1 := ""  as character
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+    jQueryString:= oRest:getQueryRequest()
+
+    cFilH1 := Iif(!Empty(jQueryString[ 'filh1']),jQueryString[ 'filh1' ],"")
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cod"])) .AND. AllTrim(jPathParams["cnumquery"]) == "1"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        ELSEIF EMPTY(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setCod(jPathParams["cod"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+
+            lRetorno := ::dados()
+
+            If !lRetorno
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 4
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

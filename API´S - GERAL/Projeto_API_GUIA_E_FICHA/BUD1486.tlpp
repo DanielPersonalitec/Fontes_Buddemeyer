@@ -1,0 +1,279 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace itensNfEntrada
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Itens das NF de Entrada                                  !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Itens das NF de Entrada                                  !
+! Data       ! 23-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface itensNfEntradaInterface
+Public Method New()
+
+Public Method getSerie() as Character
+Public Method getCGC() as Character
+Public Method getCod() as Character
+Public Method getQtd() as Numeric
+
+Public Method setSerie(c)
+Public Method setCGC(c)
+Public Method setCod(c)
+Public Method setQtd(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class ItensNfEnt Implements itensNfEntradaInterface
+
+    Private data cSerie as Character
+    Private data cCGC as Character
+    Private data cCod as Character
+    Private data nQtd as Numeric
+
+    Public Method New()
+
+    Public Method getSerie() as Character
+    Public Method getCGC() as Character
+    Public Method getCod() as Character
+    Public Method getQtd() as Numeric
+
+    Public Method setSerie(c)
+    Public Method setCGC(c)
+    Public Method setCod(c)
+    Public Method setQtd(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From ItensNfEnt Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_itensnfent/consultar/:serie/:cnpj/:cod")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe ItensNfEnt
+Method New() class ItensNfEnt
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getSerie() as Character class ItensNfEnt
+Return ::cSerie
+
+Method getCGC() as Character class ItensNfEnt
+Return ::cCGC
+
+Method getCod() as Character class ItensNfEnt
+Return ::cCod
+
+Method getQtd() as Numeric class ItensNfEnt
+Return ::nQtd
+
+// Metodos SETs
+Method setSerie(c) class ItensNfEnt
+    ::cSerie := AllTrim(c)
+Return
+
+Method setCGC(c) class ItensNfEnt
+    ::cCGC := AllTrim(c)
+Return
+
+Method setCod(c) class ItensNfEnt
+    ::cCod := AllTrim(c)
+Return
+
+Method setQtd(c) class ItensNfEnt
+    ::nQtd := c
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                         |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do Itens da nf de entrada    |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 23/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class ItensNfEnt
+
+    Local cCod := ::getCod() as Character
+    Local cCGC := ::getCGC() as Character
+    Local cSerie := ::getSerie() as Character
+    Local _cFiltro := "" as character
+
+    Local lRetorno := .F. as Logical
+
+    If (Select("ITENSNFENT") <> 0)
+        dbSelectArea("ITENSNFENT")
+        dbCloseArea()
+    EndIf
+
+    if !empty(alltrim(cDoc))
+        _cFiltro += " AND SD1.D1_DOC = '" + alltrim(upper(cDoc)) + "' "
+    endif
+
+    _cFiltro := "%" + _cFiltro + "%"
+
+    BeginSql alias 'ITENSNFENT'
+        SELECT   D1_COD, SUM(D1_QUANT) QTD
+        FROM %Table:SD1% SD1(NOLOCK)
+        INNER JOIN %Table:SA1% SA1 (NOLOCK) ON A1_FILIAL = '' AND A1_COD = D1_FORNECE  AND SA1.%notDel%
+        WHERE D1_FILIAL = '01'
+
+        //$filtro_nfe
+        AND D1_SERIE = %Exp:cSerie% //'{$serie_nfe}' // 1
+        AND A1_CGC = %Exp:cCGC% //'{$cnpj_nfe}' // 04740770000393
+        AND D1_COD = %Exp:cCod%  //'{$b1_cod}' // F11125090019820506
+        AND SD1.%notDel%
+        %exp:_cFiltro%
+        GROUP BY D1_COD
+
+    EndSql
+
+    If !ITENSNFENT->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While ITENSNFENT->(!eof())
+        jJsonItem := JsonObject():New()
+
+        ::setCod(ITENSNFENT->D1_COD)
+        ::setQtd(ITENSNFENT->QTD)
+
+        jJsonItem['message'] := "Registro encontrado."
+        jJsonItem['code'] := 200
+        jJsonItem['cod'] := ::getCod()
+        jJsonItem['qtd'] := ::getQtd()
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        ITENSNFENT->(dbskip())
+
+    enddo
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de operadores                                !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    local jQueryString:= JsonObject():new() as Json
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+    Private cDoc := ""  as character
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+    jQueryString:= oRest:getQueryRequest()
+
+    cDoc := Iif(!Empty(jQueryString[ 'doc']),jQueryString[ 'doc' ],"")
+
+    lRetorno := ::dados()
+
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cod"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIf Empty(AllTrim(jPathParams["serie"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: serie"
+            jJsonItem['code'] := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIf Empty(AllTrim(jPathParams["cnpj"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnpj"
+            jJsonItem['code'] := 4
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setSerie(jPathParams["serie"])
+            ::setCGC(jPathParams["cnpj"])
+            ::setCod(jPathParams["cod"])
+
+            lRetorno := ::dados()
+
+            If !lRetorno
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 5
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+
+
+//http://192.168.1.76:8076/api/api_itensnfent/consultar/1/04740770000393/F00134300000010349?doc=000000011

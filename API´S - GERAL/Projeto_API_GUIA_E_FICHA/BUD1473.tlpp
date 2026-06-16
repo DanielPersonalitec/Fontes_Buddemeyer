@@ -1,0 +1,1200 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace produtos
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API PRODUTOS                                                 !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! API PRODUTOS                                                 !
+! Data       ! 17-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface ProdutoInterface
+Public Method New()
+
+Public Method getCodProduto() as Character
+Public Method getBarQuery() as Character
+Public Method getUnidade() as Character
+Public Method getQtdePct() as Character
+Public Method getCodBarra() as Character
+Public Method getQtdEstoque() as Character
+Public Method getCodLocal() as Character
+Public Method getCustoStandard() as Character
+Public Method getGrupo() as Character
+Public Method getLargura() as Character
+Public Method getTipo() as Character
+Public Method getOrigem() as Character
+Public Method getDescProduto() as Character
+Public Method getCNumQuery() as Character
+Public Method getFiltro() as Character
+
+Public Method setCodProduto(c)
+Public Method setUnidade(c)
+Public Method setBarQuery(c)
+Public Method setQtdePct(c)
+Public Method setCodBarra(c)
+Public Method setCodLocal(c)
+Public Method setQtdEstoque(c)
+Public Method setCustoStandard(c)
+Public Method setGrupo(c)
+Public Method setLargura(c)
+Public Method setTipo(c)
+Public Method setOrigem(c)
+Public Method setDescProduto(c)
+Public Method setCNumQuery(c)
+Public Method setFiltro(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface prodInterfacepost
+Public Method New()
+Public Method getProduto() as Character
+Public Method getlargura() as Numeric
+Public Method getdescricao() as Character
+Public Method setdescricao(c)
+Public Method setproduto(c)
+Public Method setlargura(c)
+EndInterface
+
+Interface alteraInterface
+Public Method New()
+Public Method updateB1()
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Produto Implements ProdutoInterface
+
+    Private data cCodProduto as Character
+    Private data cUnidade as Character
+    Private data cCustoStandard as Character
+    Private data cGrupo as Character
+    Private data cLargura as Character
+    Private data cTipo as Character
+    Private data cOrigem as Character
+    Private data cDescProduto as Character
+    Private data cCNumQuery as Character
+    Private data cLocalOrigem as Character
+    Private data cCodBarras as Character
+    Private data cQunatPacotes  as Character
+    Private data cQtdEstoque  as Character
+    Private data cBarquery  as Character
+    Private data cFiltro  as Character
+
+    Public Method New()
+
+    Public Method getCodProduto() as Character
+    Public Method getCodLocal() as Character
+    Public Method getUnidade() as Character
+    Public Method getCodBarra() as Character
+    Public Method getBarQuery() as Character
+    Public Method getQtdEstoque() as Character
+    Public Method getCustoStandard() as Character
+    Public Method getGrupo() as Character
+    Public Method getLargura() as Character
+    Public Method getTipo() as Character
+    Public Method getOrigem() as Character
+    Public Method getDescProduto() as Character
+    Public Method getCNumQuery() as Character
+    Public Method getQtdePct(c)  as Character
+    Public Method getFiltro() as Character
+
+    Public Method setCodProduto(c)
+    Public Method setCodLocal(c)
+    Public Method setQtdEstoque(c)
+    Public Method setUnidade(c)
+    Public Method setBarQuery(c)
+    Public Method setCodBarra(c)
+    Public Method setQtdePct(c)
+    Public Method setCustoStandard(c)
+    Public Method setGrupo(c)
+    Public Method setLargura(c)
+    Public Method setTipo(c)
+    Public Method setOrigem(c)
+    Public Method setDescProduto(c)
+    Public Method setCNumQuery(c)
+    Public Method setFiltro(c)
+
+    Public Method dados() as Logical
+    Public Method ajustCharacter(cTexto) as Character
+
+EndClass
+
+Class postproduto Implements prodInterfacepost
+    Private data cProduto as Character
+    Private data nlargura as Numeric
+    Private data cdescricao as Character
+
+    Public Method New()
+    Public Method getProduto() as Character
+    Public Method getlargura() as Numeric
+    Public Method getdescricao() as Character
+    Public Method setdescricao(c)
+    Public Method setproduto(c)
+    Public Method setlargura(c)
+
+EndClass
+
+Class Consultar From Produto Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_produtos/consultar/:codproduto/:codlocal/:codbar/:cnumquery/:filtro")
+    Public Method consultar() as Logical
+
+EndClass
+
+
+Class Update From postproduto Implements alteraInterface
+    Public Method New()
+
+    @Post("api_produtos/updateB1")
+    Public Method updateB1()
+
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Produto
+Method New() class Produto
+Return self
+
+// Metodo construtor da classe Produto
+Method New() class postproduto
+Return self
+
+Method New() class Update
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCodProduto() as Character class Produto
+Return ::cCodProduto
+Method getBarQuery() as Character class Produto
+Return ::cBarquery
+Method getQtdEstoque()  as Character class Produto
+Return ::cQtdEstoque
+Method getQtdePct()  as Character class Produto
+Return ::cQunatPacotes
+Method getCodBarra()  as Character class Produto
+Return ::cCodBarras
+Method getUnidade() as Character class Produto
+Return ::cUnidade
+Method getCodLocal() as Character class Produto
+Return ::cLocalOrigem
+Method getCustoStandard() as Character class Produto
+Return ::cCustoStandard
+Method getGrupo() as Character class Produto
+Return ::cGrupo
+Method getLargura() as Character class Produto
+Return ::cLargura
+Method getTipo() as Character class Produto
+Return ::cTipo
+Method getOrigem() as Character class Produto
+Return ::cOrigem
+Method getDescProduto() as Character class Produto
+Return ::cDescProduto
+Method getCNumQuery() as Character class Produto
+Return ::cCNumQuery
+Method getFiltro() as Character class Produto
+Return ::cFiltro
+
+// Metodos GETs Post
+Method getProduto() as Character class postproduto
+Return ::cProduto
+Method getlargura() as Numeric class postproduto
+Return ::nlargura
+Method getdescricao() as Character class postproduto
+Return ::cdescricao
+
+// Metodos SETs
+Method setCodProduto(c) class Produto
+    ::cCodProduto := AllTrim(c)
+Return
+Method setUnidade(c) class Produto
+    ::cUnidade := AllTrim(c)
+Return
+Method setQtdEstoque(c) class Produto
+    ::cQtdEstoque := c
+Return
+Method setCustoStandard(c) class Produto
+    ::cCustoStandard := AllTrim(c)
+Return
+Method setCodLocal(c) class Produto
+    ::cLocalOrigem := AllTrim(c)
+Return
+Method setBarQuery(c) class Produto
+    ::cBarquery := AllTrim(c)
+Return
+Method setGrupo(c) class Produto
+    ::cGrupo := AllTrim(c)
+Return
+Method setQtdePct(c) class Produto
+    ::cQunatPacotes := c
+Return
+Method setCodBarra(c) class Produto
+    ::cCodBarras := AllTrim(c)
+Return
+Method setLargura(c) class Produto
+    ::cLargura := AllTrim(c)
+Return
+Method setTipo(c) class Produto
+    ::cTipo := AllTrim(c)
+Return
+Method setOrigem(c) class Produto
+    ::cOrigem := AllTrim(c)
+Return
+Method setDescProduto(c) class Produto
+    ::cDescProduto := AllTrim(c)
+Return
+Method setCNumQuery(c) class Produto
+    ::cCNumQuery := AllTrim(c)
+Return
+Method setFiltro(c) class Produto
+    ::cFiltro := AllTrim(c)
+Return
+
+// Metodos SETs post
+Method setproduto(c) class postproduto
+    ::cProduto := AllTrim(c)
+Return
+Method setlargura(c) class postproduto
+    ::nlargura := c
+Return
+Method setdescricao(c) class postproduto
+    ::cdescricao := AllTrim(c)
+Return
+
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! Realiza a busca de produtos                                  !
+! Data       ! 17-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+    Local lOK := .T. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["codproduto"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codproduto"
+            jJsonItem['code'] := 3
+            lOK := .F.
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 4
+            lOK := .F.
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIF  Empty(AllTrim(jPathParams["codlocal"])) .AND. AllTrim(jPathParams["cnumquery"]) == "09"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codlocal."
+            jJsonItem['code'] := 5
+            aAdd(oRetorno["retorno"], jJsonItem)
+            lOK := .F.
+        ELSEIF  Empty(AllTrim(jPathParams["codbar"])) .AND. AllTrim(jPathParams["cnumquery"]) == "11"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codbar."
+            jJsonItem['code'] := 6
+            aAdd(oRetorno["retorno"], jJsonItem)
+            lOK := .F.
+        ENDIF
+
+        IF lOK
+            // Recebe as informações
+            ::setCodProduto(jPathParams["codproduto"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+            IF !Empty(AllTrim(jPathParams["codlocal"]))
+                ::setCodLocal(jPathParams["codlocal"])
+            EndIf
+            IF !Empty(AllTrim(jPathParams["codbar"]))
+                ::setBarQuery(jPathParams["codbar"])
+            EndIf
+            IF !Empty(AllTrim(jPathParams["filtro"]))
+                ::setFiltro(jPathParams["filtro"])
+            EndIf
+
+            If (Select("BPRODUTO") <> 0)
+                dbSelectArea("BPRODUTO")
+                dbCloseArea()
+            EndIf
+
+            // Chama o método dados() que já tem as queries
+            lRetorno := ::dados()
+
+            // Se for query múltipla, precisa fazer loop
+            If lRetorno
+                While !BPRODUTO->(Eof())
+                    jJsonItem := JsonObject():New()
+
+                    IF  ::getCNumQuery() == "09"
+                        jJsonItem['codproduto'] := AllTrim(BPRODUTO->B1_COD)
+                        jJsonItem['message'] := "Registro encontrado."
+                        jJsonItem['code'] := 200
+                        jJsonItem['codbar'] := AllTrim(BPRODUTO->B1_CODBAR)
+                        jJsonItem['largura'] := BPRODUTO->B1_LARGURA
+                        jJsonItem['unidade'] := AllTrim(BPRODUTO->B1_UM)
+                        jJsonItem['custostand'] := BPRODUTO->B1_CUSTD
+                        jJsonItem['grupo'] := AllTrim(BPRODUTO->B1_GRUPO)
+                        jJsonItem['tipo'] := AllTrim(BPRODUTO->B1_TIPO)
+                        jJsonItem['origemprod'] := AllTrim(BPRODUTO->B1_ORIGEM)
+                        jJsonItem['qtdpacotes'] := BPRODUTO->Z7_QTDPCT
+                        jJsonItem['estoque'] := BPRODUTO->ESTOQUE
+                        jJsonItem['descprod'] := ::ajustCharacter(AllTrim(BPRODUTO->B1_DESC))
+                        jJsonItem['local'] := AllTrim(BPRODUTO->B2_LOCAL)
+                    ELSE
+                        jJsonItem['codproduto'] := AllTrim(BPRODUTO->B1_COD)
+                        jJsonItem['message'] := "Registro encontrado."
+                        jJsonItem['code'] := 200
+                        jJsonItem['codbar'] := AllTrim(BPRODUTO->B1_CODBAR)
+                        jJsonItem['largura'] := BPRODUTO->B1_LARGURA
+                        jJsonItem['unidade'] := AllTrim(BPRODUTO->B1_UM)
+                        jJsonItem['custostand'] := BPRODUTO->B1_CUSTD
+                        jJsonItem['grupo'] := AllTrim(BPRODUTO->B1_GRUPO)
+                        jJsonItem['tipo'] := AllTrim(BPRODUTO->B1_TIPO)
+                        jJsonItem['origemprod'] := AllTrim(BPRODUTO->B1_ORIGEM)
+                        jJsonItem['descprod'] := ::ajustCharacter(AllTrim(BPRODUTO->B1_DESC))
+                        IF  ::getCNumQuery() $ "|10|11|" .AND. IIF(ValType(::getBarQuery()) == "C", IIF(::getBarQuery() == "S", .F.,.T.), .T.)
+                            jJsonItem['qtdpacotes'] := BPRODUTO->Z7_QTDPCT
+                        ENDIF
+                        IF ::getCNumQuery() $ "13|14|15|16|17|18|19"
+                            jJsonItem['perda'] := BPRODUTO->G1_PERDA
+                            jJsonItem['quantidadeG1'] := BPRODUTO->G1_QUANT
+                            jJsonItem['componente'] := alltrim(BPRODUTO->G1_COMP)
+                            IF ::getCNumQuery() $ "18|"
+                                jJsonItem['tipodescri'] := alltrim(BPRODUTO->TIPO)
+                            ENDIF
+                        ENDIF
+                    ENDIF
+
+                    aAdd(oRetorno["retorno"], jJsonItem)
+                    BPRODUTO->(DBSkip())
+                End
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 2
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do produto                   |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 08/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Produto
+
+    Local cCodProduto  := ::getCodProduto() as Character
+    Local cCNumQuery   := ::getCNumQuery() as Character
+    Local cLocalOrigem := ::getCodLocal() as Character
+    Local cBarquery    := ::getBarQuery() as Character
+    Local cFiltro      := ::getFiltro() as Character
+    Local lRetorno     := .F. as Logical
+    Local lQuery       := .F. as Logical
+
+    // Busco o produto
+    If (Select("BPRODUTO") <> 0)
+        dbSelectArea("BPRODUTO")
+        dbCloseArea()
+    EndIf
+
+    BPRODUTO := Getnextalias()
+
+    // Realizo a consulta baseada no tipo de query
+    If cCNumQuery == "01"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_COD = %Exp:cCodProduto%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "02"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_COD = %Exp:cCodProduto%
+                AND B1_FILIAL = %xFilial:SB1%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "03"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_COD = %Exp:"MOD"+cCodProduto%
+                AND B1_FILIAL = %xFilial:SB1%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "04"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_COD = %Exp:cCodProduto%
+                AND B1_FILIAL = %xFilial:SB1%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "05"
+        cCodProduto := "%(B1_COD LIKE '%"+cCodProduto+"%' OR B1_DESC LIKE '%"+cCodProduto+"%')%"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                TOP 200 B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_FILIAL = %xFilial:SB1%
+                AND (
+                    B1_DESC LIKE '%FRONHA%'
+                    OR B1_DESC LIKE '%SOBRE%'
+                    OR B1_DESC LIKE '%LENCOL%'
+                )
+                AND B1_TIPO IN ('AC', 'AM', 'IC', 'IM')
+                AND %Exp:cCodProduto%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "06"
+        cCodProduto := "%(B1_COD LIKE '%"+cCodProduto+"%' OR B1_DESC LIKE '%"+cCodProduto+"%')%"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                TOP 200 B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_FILIAL = %xFilial:SB1%
+                AND %Exp:cCodProduto%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "07"
+        cCodProduto := "%(B1_COD LIKE '%"+cCodProduto+"%' OR B1_DESC LIKE '%"+cCodProduto+"%')%"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                TOP 200 B1_UM,
+                B1_CODBAR,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_FILIAL = %xFilial:SB1%
+                AND (
+                    (
+                        LEFT(B1_TIPO, 1) IN ('A', 'X')
+                        AND B1_UM = 'JG'
+                    )
+                    OR LEFT(B1_COD, 1) = 'I'
+                )
+                AND %Exp:cCodProduto%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "08"
+        cCodProduto := "%(B1_CODBAR = '"+cCodProduto+"' OR B1_COD = '"+cCodProduto+"')%"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_CODBAR,
+                B1_UM,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC
+            FROM
+                %Table:SB1% (NOLOCK)
+            WHERE
+                B1_FILIAL = %xFilial:SB1%
+                AND %Exp:cCodProduto%
+                AND %notDel%
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "09"
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                DISTINCT SB1.B1_COD,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_LARGURA,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM,
+                SB1.B1_CODBAR,
+                SB1.B1_UM,
+                SB1.B1_DESC,
+                SB2.B2_LOCAL,
+                SZ7.Z7_QTDPCT,
+                ISNULL(SB2.B2_QATU, 0) AS ESTOQUE
+            FROM
+                %Table:SB1% SB1 (NOLOCK)
+            LEFT JOIN %Table:SZ7% SZ7 (NOLOCK)
+            ON SZ7.Z7_FILIAL = %xFilial:SZ7%
+                AND SZ7.Z7_COD = SB1.B1_CODMOD
+                AND SZ7.D_E_L_E_T_ = ''
+            LEFT JOIN %Table:SB2% SB2 (NOLOCK)
+            ON SB2.B2_FILIAL = '01'
+                AND SB2.B2_COD = SB1.B1_COD
+                AND SB2.B2_QATU > 0
+                AND SB2.B2_LOCAL = %exp:cLocalOrigem%
+                AND SB2.D_E_L_E_T_ = ''
+            WHERE
+                SB1.B1_FILIAL = %xFilial:SB1%
+                AND SB1.B1_CODBAR = %exp:cCodProduto%
+                AND SB1.D_E_L_E_T_ = ''
+        EndSql
+        lQuery := .T.
+    ElseIf cCNumQuery == "10"
+
+        BeginSql alias 'BPRODUTO'
+            SELECT
+                B1_CODBAR,
+                B1_UM,
+                B1_CUSTD,
+                B1_GRUPO,
+                B1_LARGURA,
+                B1_TIPO,
+                B1_ORIGEM,
+                B1_COD,
+                B1_DESC,
+                SZ7.Z7_QTDPCT
+            FROM
+                %Table:SB1% SB1 (NOLOCK)
+            LEFT JOIN %Table:SZ7% SZ7 (NOLOCK)
+            ON SZ7.Z7_FILIAL = ''
+                AND SZ7.Z7_COD = SB1.B1_CODMOD
+                AND SZ7.D_E_L_E_T_ = ''
+            WHERE
+                SB1.B1_FILIAL = ''
+                AND SB1.B1_CODBAR = %exp:cCodProduto%
+                AND SB1.D_E_L_E_T_ = ''
+        EndSql
+        lQuery := .T.
+    ELSEIF cCNumQuery == "11" .AND. !Empty(cBarquery)
+        // Implementar se necessário
+
+        IF cBarquery == "N"
+
+            cCodProduto := "% (SB1.B1_COD LIKE '%"+cCodProduto+"%' OR SB1.B1_CODBAR LIKE '%"+cCodProduto+"%' OR SB1.B1_DESC LIKE '%"+cCodProduto+"%') %"
+
+            BeginSql alias 'BPRODUTO'
+                SELECT
+                    DISTINCT TOP 100 SB1.B1_COD,
+                    SB1.B1_CUSTD,
+                    SB1.B1_GRUPO,
+                    SB1.B1_LARGURA,
+                    SB1.B1_TIPO,
+                    SB1.B1_ORIGEM,
+                    SB1.B1_DESC,
+                    SB1.B1_CODBAR,
+                    SB1.B1_UM,
+                    SZ7.Z7_QTDPCT
+                FROM
+                    %Table:SB1% SB1 (NOLOCK)
+                LEFT JOIN %Table:SB2% SB2 (NOLOCK)
+                ON SB2.B2_FILIAL = '01'
+                    AND SB2.B2_COD = SB1.B1_COD
+                    AND SB2.B2_QATU > 0
+                    AND SB2.D_E_L_E_T_ = '' "
+                 AND %exp:cCodProduto%
+             LEFT JOIN %Table:SZ7% SZ7 (NOLOCK)
+             ON SZ7.Z7_FILIAL = ''
+                 AND SZ7.Z7_COD = SB1.B1_CODMOD
+                 AND SZ7.D_E_L_E_T_ = ''
+                 WHERE SB1.B1_FILIAL = ''
+                 AND SB1.D_E_L_E_T_ = ''
+                 AND %Exp:cCodProduto%
+            EndSql
+            lQuery := .T.
+        ELSEIF cBarquery == "S"
+
+            BeginSql alias 'BPRODUTO'
+                SELECT
+                    DISTINCT TOP 100 SB1.B1_COD,
+                    SB1.B1_CUSTD,
+                    SB1.B1_GRUPO,
+                    SB1.B1_LARGURA,
+                    SB1.B1_TIPO,
+                    SB1.B1_ORIGEM,
+                    SB1.B1_DESC,
+                    SB1.B1_CODBAR,
+                    SB1.B1_UM
+                FROM
+                    %Table:SB1% SB1 (NOLOCK)
+                LEFT JOIN %Table:SB2% SB2 (NOLOCK)
+                ON SB2.B2_FILIAL = '01'
+                    AND SB2.B2_COD = SB1.B1_COD
+                WHERE
+                    SB1.B1_FILIAL = ''
+                    AND SB1.D_E_L_E_T_ = ''
+                    AND SB1.B1_CODBAR = %Exp:cCodProduto%
+            EndSql
+            lQuery := .T.
+        ENDIF
+    ELSEIF  cCNumQuery == "12"
+
+        IF !EMPTY(cFiltro)
+            cFiltro := "% TOP " +cFiltro+ "  SB1.B1_COD %"
+        ELSE
+            cFiltro := "%  SB1.B1_COD  %"
+        ENDIF
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                DISTINCT %Exp:cFiltro%,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM,
+                SB1.B1_DESC
+            FROM
+                %Table:SB1% SB1 (NOLOCK)
+            INNER JOIN %Table:SG1% SG1 (NOLOCK)
+            ON SG1.G1_COD = SB1.B1_COD
+                AND SG1.D_E_L_E_T_ = ''
+            WHERE
+                SB1.B1_FILIAL = ' '
+                AND SB1.D_E_L_E_T_ = ''
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ' '
+                )
+                AND SB1.B1_COD = %Exp:cCodProduto%
+                AND LEFT(SB1.B1_TIPO, 1) IN ('A', 'X')
+                AND SB1.B1_UM IN ('JG', 'PC')
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "13"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+                AND SB1.D_E_L_E_T_ = ''
+            WHERE
+                SG1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ' '
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ' '
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+                AND SB1.B1_GRUPO <> '0104'
+                AND SB1.B1_TIPO NOT IN ('IC', 'AF', 'IM', 'IF')
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "14"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                DISTINCT SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+                AND SB1.D_E_L_E_T_ = ''
+            WHERE
+                SG1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ' '
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ' '
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+                AND SB1.B1_TIPO IN ('IC', 'IM', 'IF', 'CI')
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "15"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                DISTINCT DISTINCT SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1
+            INNER JOIN %Table:SB1% SB1
+            ON SB1.B1_COD = SG1.G1_COMP
+            WHERE
+                SB1.D_E_L_E_T_ = ''
+                AND SG1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ''
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ''
+                )
+                AND SG1.G1_COD = %Exp:cItemComp%
+                AND SB1.B1_GRUPO = '0104'
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "16"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                DISTINCT SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+                AND SB1.D_E_L_E_T_ = ''
+            WHERE
+                SB1.B1_FILIAL = ''
+                AND SG1.D_E_L_E_T_ = ''
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ''
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "17"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+                AND SB1.D_E_L_E_T_ = ' '
+            WHERE
+                SG1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ' '
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ' '
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+                AND SB1.B1_GRUPO <> '0104'
+                AND SB1.B1_TIPO IN ('IC', 'IM', 'IF', 'CI')
+        EndSql
+        lQuery := .T.
+
+    ELSEIF cCNumQuery == "18"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                SB1.B1_DESC,
+                CASE
+                    B1_GRUPO
+                    WHEN '0104'
+                        THEN 'TECIDO'
+                    ELSE 'ITEM'
+                END AS TIPO,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+            WHERE
+                SG1.D_E_L_E_T_ = ''
+                AND SB1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ''
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ''
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+        EndSql
+        lQuery := .T.
+
+
+    ELSEIF cCNumQuery == "19"
+
+        BeginSql Alias "BPRODUTO"
+            SELECT
+                SB1.B1_DESC,
+                SG1.G1_PERDA,
+                SG1.G1_QUANT,
+                SG1.G1_COMP,
+                SB1.B1_COD,
+                SB1.B1_CODBAR,
+                SB1.B1_LARGURA,
+                SB1.B1_UM,
+                SB1.B1_CUSTD,
+                SB1.B1_GRUPO,
+                SB1.B1_TIPO,
+                SB1.B1_ORIGEM
+            FROM
+                %Table:SG1% SG1 (NOLOCK)
+            INNER JOIN %Table:SB1% SB1 (NOLOCK)
+            ON SB1.B1_COD = SG1.G1_COMP
+            WHERE
+                SB1.D_E_L_E_T_ = ''
+                AND SB1.B1_FILIAL = ''
+                AND SG1.D_E_L_E_T_ = ''
+                AND (
+                    SG1.G1_FILIAL = '01'
+                    OR SG1.G1_FILIAL = ''
+                )
+                AND SG1.G1_COD = %Exp:cCodProduto%
+                AND SB1.B1_GRUPO <> '0104'
+                AND SB1.B1_TIPO NOT IN ('IC', 'IM', 'IF', 'CI')
+        EndSql
+        lQuery := .T.
+
+    EndIf
+
+    IF  lQuery
+        // Se existir o produto
+        If !BPRODUTO->(Eof())
+            lRetorno := .T.
+        EndIf
+    EndIf
+
+Return lRetorno
+
+
+/*
+/==================================================================================\
+|Nome              : Method updateB1()  class Update  na tabela SB1                |
+|==================================================================================|
+|Descricao         : Este metodo atualiza  na tabela SB1                           |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 15/01/2026                                                    |
+\==================================================================================/
+*/
+
+Method updateB1()  class Update
+
+    Local cBody := "" as Character
+    Local cProduto := "" as Character
+    Local cDescricao := "" as Character
+    Local nlargura := 0 as Numeric
+    Local oBody := JsonObject():new()
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+    cBody := oRest:getBodyRequest()
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    IF cBody $ "produto/largura" .OR. oBody:HasProperty("produto") .OR. oBody:HasProperty("largura")
+
+        If !oBody:HasProperty("produto")
+            jJsonItem['code'] := 1
+            jJsonItem['message'] := "O campo (produto) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        ElseIf !oBody:HasProperty("largura")
+            jJsonItem['code'] := 2
+            jJsonItem['message'] := "O campo (largura) nao foi informado!"
+            Aadd(oRetorno["retorno"], jJsonItem)
+        else
+            // Recebe as informacoes
+            ::setproduto(oBody["produto"])
+            ::setlargura(oBody["largura"])
+            cProduto := ::getproduto()
+            nlargura := ::getlargura()
+            jJsonItem := JsonObject():New()
+
+            If oBody:HasProperty("descricao")
+                ::setdescricao(oBody["descricao"])
+                cDescricao :=  ::getdescricao()
+            ENDIF
+
+            If Empty(cProduto)
+                jJsonItem['code'] := 3
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: produto"
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ElseIf Empty(nlargura)
+                jJsonItem['code'] := 4
+                jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: largura"
+                Aadd(oRetorno["retorno"], jJsonItem)
+            ELSE
+
+                DBSelectArea("SB1")
+                SB1->(DBSetOrder(1))
+                If  SB1->(dbSeek(xFilial("SB1") + padr(alltrim(cProduto),tamsx3("B1_COD")[1]))) //xFilial("SB1") chumbado pois na query estava assim
+
+                    RecLock("SB1", .F.)
+                    SB1->B1_LARGURA = nlargura
+                    IF !Empty(cDescricao)
+                        SB1->B1_DESC = cDescricao
+                    ENDIF
+                    SB1->(MsUnLock())
+
+                    jJsonItem['code'] := 200
+                    jJsonItem['message'] := "largura alterado com sucesso para o produto: " + AllTrim(SB1->B1_COD)
+                    jJsonItem['produto'] := alltrim(SB1->B1_COD)
+                    jJsonItem['largura'] := SB1->B1_LARGURA
+                    IF !Empty(cDescricao)
+                        jJsonItem['descricao'] := cDescricao
+                    ENDIF
+                    Aadd(oRetorno["retorno"], jJsonItem)
+
+                ELSE
+                    jJsonItem['code'] := 5
+                    jJsonItem['message'] := "produto nao encontrado!"
+                    Aadd(oRetorno["retorno"], jJsonItem)
+                ENDIF
+                SB1->(DBCloseArea())
+            ENDIF
+        ENDIF
+    ELSE
+        jJsonItem['code'] := 6
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        aAdd(oRetorno["retorno"], jJsonItem)
+    ENDIF
+
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return oRest
+
+/*
+/==================================================================================\
+|Nome              : ajustCharacter                                                |
+|==================================================================================|
+|Descricao         : Remove acentos e caracteres especiais de uma string           |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 18/11/2025                                                    |
+\==================================================================================/
+*/
+Method ajustCharacter(cTexto) as Character Class Produto
+
+    Local cRetorno := "" as Character
+    Local nPos := 0 as Integer
+    Local cChar := "" as Character
+    Local cAcentos := "ÁÀÂÃÄáàâãäÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ" as Character
+    Local cNormais := "AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn" as Character
+
+    // Garante string e remove espaços no início/fim
+    cTexto := AllTrim(cTexto)
+
+    For nPos := 1 To Len(cTexto)
+        cChar := SubStr(cTexto, nPos, 1)
+        // Substitui acentos por caracteres normais
+        If At(cChar, cAcentos) > 0
+            cChar := SubStr(cNormais, At(cChar, cAcentos), 1)
+        EndIf
+        // Mantém somente letras, números e espaço
+        If cChar $ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn-.opqrstuvwxyz0123456789 "
+            cRetorno += cChar
+        EndIf
+    Next nPos
+
+    // Remove espaços duplicados e converte para maiúsculo
+    cRetorno := StrTran(cRetorno, "  ", " ")
+    cRetorno := AllTrim(cRetorno)
+
+Return cRetorno

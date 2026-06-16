@@ -1,0 +1,459 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace estoqueapi
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Saldos Físico e Financeiro                               !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! API Saldos Físico e Financeiro                               !
+! Data       ! 17-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/* Interfaces */
+Interface EstoqueInterface
+
+Public Method New()
+
+Public Method getSaldo() as Numeric
+Public Method getLocal() as Character
+Public Method getNomeCliente() as Character
+Public Method getPedido() as Character
+Public Method getDatabase() as Character
+Public Method getCNumQuery() as Character
+Public Method getCodProduto() as Character
+Public Method getQuantidadeEstoque() as Character
+Public Method getCodCli() as Character
+
+Public Method setSaldo(n)
+Public Method setCodProduto(c)
+Public Method setLocal(c)
+Public Method setNomeCliente(c)
+Public Method setPedido(c)
+Public Method setDatabase(d)
+Public Method setQuantidadeEstoque(c)
+Public Method setCNumQuery(c)
+Public Method setCodCli(c)
+
+Public Method dadosSB2() as Logical
+
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultarSB2() as Logical
+EndInterface
+
+/* Classes */
+Class estoque Implements EstoqueInterface
+
+    Private data nSaldo as Numeric
+    Private data cLocal as Character
+    Private data cNomeCliente as Character
+    Private data cPedido as Character
+    Private data cDatabase as Character
+    Private data cNumQuery as Character
+    Private data cCodProduto as Character
+    Private data cQuantidadeEstoque as Character
+    Private data cCodCli as Character
+
+    Public Method New()
+
+    Public Method getSaldo() as Numeric
+    Public Method getQuantidadeEstoque() as Character
+    Public Method getLocal() as Character
+    Public Method getNomeCliente() as Character
+    Public Method getPedido() as Character
+    Public Method getDatabase() as Character
+    Public Method getCNumQuery() as Character
+    Public Method getCodProduto() as Character
+    Public Method getCodCli() as Character
+
+    Public Method setSaldo(n)
+    Public Method setLocal(c)
+    Public Method setCodProduto(c)
+    Public Method setNomeCliente(c)
+    Public Method setQuantidadeEstoque(c)
+    Public Method setPedido(c)
+    Public Method setDatabase(c)
+    Public Method setCNumQuery(c)
+    Public Method setCodCli(c)
+
+    Public Method dadosSB2() as Logical
+
+EndClass
+
+Class consultarSB2 From estoque Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_estoque/consultar/:codproduto/:quantidade/:cCodCli/:cnumquery")
+    Public Method consultarSB2() as Logical
+
+EndClass
+
+/* Métodos construtores */
+Method New() class estoque
+Return self
+
+Method New() class consultarSB2
+Return self
+
+/* GETs */
+Method getSaldo() as Numeric class estoque
+Return ::nSaldo
+
+Method getCodCli() as Character class estoque
+Return ::cCodCli
+
+Method getLocal() as Character class estoque
+Return ::cLocal
+
+Method getCodProduto() as Character class estoque
+Return ::cCodProduto
+
+Method getQuantidadeEstoque() as Character class estoque
+Return ::cQuantidadeEstoque
+
+Method getNomeCliente() as Character class estoque
+Return ::cNomeCliente
+
+Method getPedido() as Character class estoque
+Return ::cPedido
+
+Method getDatabase() as Character class estoque
+Return ::cDatabase
+
+Method getCNumQuery() as Character class estoque
+Return ::cNumQuery
+
+/* SETs */
+Method setSaldo(n) class estoque
+    ::nSaldo := n
+Return
+
+Method setLocal(c) class estoque
+    ::cLocal := AllTrim(c)
+Return
+
+Method setCodProduto(c) class estoque
+    ::cCodProduto := AllTrim(c)
+Return
+
+Method setPedido(c) class estoque
+    ::cPedido := AllTrim(c)
+Return
+
+Method setNomeCliente(c) class estoque
+    ::cNomeCliente := AllTrim(c)
+Return
+
+Method setCodCli(c) class estoque
+    ::cCodCli := AllTrim(c)
+Return
+
+
+Method setDatabase(c) class estoque
+    ::cDatabase := c
+Return
+
+Method setCNumQuery(c) class estoque
+    ::cNumQuery := AllTrim(c)
+Return
+
+Method setQuantidadeEstoque(c) class estoque
+    ::cQuantidadeEstoque := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+| Nome     : dadosSB2                                                              |
+| Descricao: Executa a query na SB2 e posiciona área alias Q_SALDO               |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 17-12-2025                                                            |
+\==================================================================================/
+*/
+Method dadosSB2() as Logical Class estoque
+
+    //Local cLocal := AllTrim(::getLocal()) as Character
+    Local cCodProduto := ::getCodProduto() as Character
+    Local cNumQuery   := ::getCNumQuery() as Character
+    Local cCodCli     := ::getCodcli() as Character
+    Local cQuantidadeEstoque := ::getQuantidadeEstoque() as Character
+    //Local cFilter := "" as Character
+    Local lRetorno := .F. as Logical
+    Local lQuery := .F. as Logical
+
+    // garante que a area Q_SALDO esteja fechada antes de abrir o alias
+    If (Select("Q_SALDO") <> 0)
+        dbSelectArea("Q_SALDO")
+        dbCloseArea()
+    EndIf
+
+    If cNumQuery == "01"
+        //Saldo por produto e local (R7)
+        BeginSql Alias "Q_SALDO"
+            SELECT
+                SB2.B2_LOCAL,
+                (SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_QEMP) AS SALDO
+            FROM
+                %Table:SB2% SB2
+            WHERE
+                SB2.D_E_L_E_T_ = ''
+                AND SB2.B2_LOCAL = 'R7'
+                AND SB2.B2_COD = %Exp:cCodProduto%
+        EndSql
+        lQuery := .T.
+    ElseIf cNumQuery == "02"
+        cQuantidadeEstoque := val(cQuantidadeEstoque)
+        //Locais com saldo maior que quantidade solicitada
+        BeginSql Alias "Q_SALDO"
+            SELECT
+                DISTINCT SB2.B2_LOCAL,
+                (
+                    SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_AEMPENH - SB2.B2_QEMP
+                ) AS SALDO
+            FROM
+                %Table:SB2% SB2 (NOLOCK)
+            WHERE
+                SB2.B2_FILIAL = '01'
+                AND SB2.B2_COD = %Exp:cCodProduto%
+                AND (
+                    SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_AEMPENH - SB2.B2_QEMP
+                ) > %Exp:cQuantidadeEstoque%
+                AND SB2.D_E_L_E_T_ = ''
+        EndSql
+        lQuery :=.T.
+    ElseIf cNumQuery == "03"
+        //Locais com saldo maior que quantidade solicitada
+        BeginSql Alias "Q_SALDO"
+            SELECT
+                DISTINCT SB2.B2_LOCAL,
+                (
+                    SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_AEMPENH - SB2.B2_QEMP
+                ) AS SALDO
+            FROM
+                %Table:SB2% SB2 (NOLOCK)
+            WHERE
+                SB2.B2_FILIAL = '01'
+                AND SB2.B2_COD = %Exp:cCodProduto%
+                AND (
+                    SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_AEMPENH - SB2.B2_QEMP
+                ) > 0
+                AND SB2.D_E_L_E_T_ = ''
+        EndSql
+        lQuery :=.T.
+    ELSEIF cNumQuery == "04"
+        BeginSql Alias "Q_SALDO"
+            SELECT
+                SB2.B2_LOCAL,
+                (
+                    SB2.B2_QATU - SB2.B2_RESERVA - SB2.B2_AEMPENH - SB2.B2_QEMP
+                ) AS SALDO
+            FROM
+                %Table:SB2% SB2
+            WHERE
+                SB2.D_E_L_E_T_ = ''
+                AND SB2.B2_LOCAL = 'R7'
+                AND SB2.B2_COD = %Exp:cCodProduto%
+        EndSql
+        lQuery :=.T.
+
+    ELSEIF cNumQuery == "05"
+        //http://192.168.1.76:8070/api/api_estoque/consultar/F00103270000010701/2/EX0195/05
+        //RES.C5_NUM ,RES.A1_NOME ,RES.C5_DTBASE
+
+        cCodCli := "% (A1.A1_NOME LIKE '%"+cCodCli+"%'  OR A1.A1_COD = '"+cCodCli+"' ) %"
+
+        BeginSql Alias "Q_SALDO"
+            SELECT
+                DISTINCT RES.C5_NUM,
+                RES.A1_NOME,
+                RES.C5_DTBASE
+            FROM
+                (
+                    SELECT
+                        C5.C5_NUM,
+                        C6.C6_PRODUTO,
+                        C6.C6_LOCAL,
+                        A1.A1_COD,
+                        A1.A1_NOME,
+                        C5.C5_DTBASE,
+                        COALESCE(
+                            (
+                                SELECT
+                                    SUM(
+                                        B2.B2_QATU - B2.B2_RESERVA - B2.B2_AEMPENH - B2.B2_QEMP
+                                    )
+                                FROM
+                                    %Table:SB2% B2 (NOLOCK)
+                                WHERE
+                                    B2.B2_FILIAL = '01'
+                                    AND B2.B2_COD = C6.C6_PRODUTO
+                                    AND B2.B2_LOCAL = C6.C6_LOCAL
+                                    AND B2.D_E_L_E_T_ = ''
+                            ),
+                            0
+                        ) AS EST_LOCAL,
+                        COALESCE(
+                            (
+                                SELECT
+                                    SUM(
+                                        B2.B2_QATU - B2.B2_RESERVA - B2.B2_AEMPENH - B2.B2_QEMP
+                                    )
+                                FROM
+                                    %Table:SB2% B2 (NOLOCK)
+                                WHERE
+                                    B2.B2_FILIAL = '01'
+                                    AND B2.B2_COD = C6.C6_PRODUTO
+                                    AND B2.B2_LOCAL <> C6.C6_LOCAL
+                                    AND B2.B2_LOCAL IN ('04', '06', '13', '16', 'A4', 'A6', '11')
+                                    AND B2.D_E_L_E_T_ = ''
+                            ),
+                            0
+                        ) AS EST_OUTROS
+                    FROM
+                        %Table:SC5% C5 (NOLOCK)
+                    INNER JOIN %Table:SC6% C6 (NOLOCK)
+                    ON C6.C6_FILIAL = '01'
+                        AND C6.C6_NUM = C5.C5_NUM
+                        AND C6.D_E_L_E_T_ = ''
+                    INNER JOIN %Table:SA1% A1 (NOLOCK)
+                    ON A1.A1_FILIAL = ''
+                        AND A1.A1_COD = C5.C5_CLIENTE
+                        AND A1.A1_LOJA = C5.C5_LOJACLI
+                        AND A1.D_E_L_E_T_ = ''
+                    WHERE
+                        C5.C5_FILIAL = '01'
+                        AND LEFT(C5.C5_NUM, 2) = 'NP'
+                        AND %Exp:cCodCli%
+                        AND (C6.C6_QTDVEN - C6.C6_QTDENT - C6.C6_QTDCANC) > 0
+                        AND C5.D_E_L_E_T_ = ''
+                ) RES
+            WHERE
+                RES.EST_LOCAL > 0
+            ORDER BY
+                RES.C5_DTBASE ASC
+        EndSql
+        lQuery :=.T.
+    EndIf
+
+    IF  lQuery
+        // Se existir registro, popula atributos da classe (posiciona no primeiro registro)
+        If !Q_SALDO->(Eof())
+            lRetorno := .T.
+        EndIf
+    EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+| Nome     : consultarSB2                                                          |
+| Descricao: Endpoint GET: valida parametros e retorna lista de estoque (JSON)    |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 08/12/2025                                                             |
+\==================================================================================/
+*/
+Method consultarSB2() as Logical class consultarSB2
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+    Local lOK := .T. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai (mantive por padrão)
+
+    oRetorno["retorno"] := {}
+
+    // pega parametros da rota
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+
+        If Empty(AllTrim(jPathParams["codproduto"])) .AND. AllTrim(jPathParams["cnumquery"]) <> "05"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codproduto"
+            jJsonItem['code'] := 3
+            lOK := .F.
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ElseIf Empty(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 4
+            lOK := .F.
+            aAdd(oRetorno["retorno"], jJsonItem)
+        ELSEIF Empty(AllTrim(jPathParams["quantidade"])) .AND. AllTrim(jPathParams["cnumquery"]) == "02"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: quantidade."
+            jJsonItem['code'] := 5
+            aAdd(oRetorno["retorno"], jJsonItem)
+            lOK := .F.
+        ELSEIF Empty(AllTrim(jPathParams["cCodCli"])) .AND. AllTrim(jPathParams["cnumquery"]) == "05"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cCodCli."
+            jJsonItem['code'] := 6
+            aAdd(oRetorno["retorno"], jJsonItem)
+            lOK := .F.
+        ENDIF
+
+        IF lOK
+
+            IF !Empty(AllTrim(jPathParams["quantidade"]))
+                ::setQuantidadeEstoque(jPathParams["quantidade"])
+            EndIf
+            IF !Empty(AllTrim(jPathParams["cCodCli"]))
+                ::setCodCli(jPathParams["cCodCli"])
+            EndIf
+            // seta o codproduto (termo de busca) na instância
+            ::setCodProduto(jPathParams["codproduto"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+
+            // executa a query (dadosSB2 usa o valor de ::cCodProduto)
+            lRetorno := ::dadosSB2()
+
+            // Se retornou registros, faz loop e monta JSON
+            If lRetorno
+                While !Q_SALDO->(Eof())
+                    jJsonItem := JsonObject():New()
+
+                    IF  ::getCNumQuery() == "05" // RES.C5_NUM ,RES.A1_NOME ,RES.C5_DTBASE
+                        jJsonItem['numeropedido']    := AllTrim(Q_SALDO->C5_NUM)
+                        jJsonItem['nomecli']       := AllTrim(Q_SALDO->A1_NOME)
+                        jJsonItem['database']       := Q_SALDO->C5_DTBASE
+                        jJsonItem['message']   := "Registro encontrado."
+                        jJsonItem['code']      := 200
+                    ELSE
+                        jJsonItem['saldoestoque']  := Q_SALDO->SALDO
+                        jJsonItem['local']      := AllTrim(Q_SALDO->B2_LOCAL)
+                        jJsonItem['message']   := "Registro encontrado."
+                        jJsonItem['code']      := 200
+                    ENDIF
+
+                    aAdd(oRetorno["retorno"], jJsonItem)
+                    Q_SALDO->(DBSkip())
+                End
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 2  
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API com tratamento
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

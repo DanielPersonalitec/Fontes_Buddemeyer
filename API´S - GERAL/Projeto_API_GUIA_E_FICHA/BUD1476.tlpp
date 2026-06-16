@@ -1,0 +1,302 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace clientesapi
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Clientes                                                 !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! API Clientes                                                 !
+! Data       ! 17-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/* Interfaces */
+Interface ClientesInterface
+
+Public Method New()
+
+Public Method getCgcCliente() as Character
+Public Method getEstCliente() as Character
+Public Method getMunCliente() as Character
+Public Method getNomeCliente() as Character
+Public Method getNonRezCliente() as Character
+Public Method getSearch() as Character
+Public Method getCNumQuery() as Character
+
+Public Method setCgcCliente(c)
+Public Method setEstCliente(c)
+Public Method setMunCliente(c)
+Public Method setNomeCliente(c)
+Public Method setNonRezCliente(c)
+Public Method setSearch(c)
+Public Method setCNumQuery(c)
+
+Public Method dadosSA1(jPathParams) as Logical
+
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultarSA1() as Logical
+EndInterface
+
+/* Classes */
+Class Clientes Implements ClientesInterface
+
+    Private data cCgcCliente as Character
+    Private data cEstCliente as Character
+    Private data cMunCliente as Character
+    Private data cNomeCliente as Character
+    Private data cNonRezCliente as Character
+    Private data cSearch as Character
+    Private data cNumQuery as Character
+
+    Public Method New()
+
+    Public Method getCgcCliente() as Character
+    Public Method getEstCliente() as Character
+    Public Method getMunCliente() as Character
+    Public Method getNomeCliente() as Character
+    Public Method getNonRezCliente() as Character
+    Public Method getSearch() as Character
+    Public Method getCNumQuery() as Character
+
+    Public Method setCgcCliente(c)
+    Public Method setEstCliente(c)
+    Public Method setMunCliente(c)
+    Public Method setNomeCliente(c)
+    Public Method setNonRezCliente(c)
+    Public Method setSearch(c)
+    Public Method setCNumQuery(c)
+
+    Public Method dadosSA1() as Logical
+
+EndClass
+
+Class ConsultarSA1 From Clientes Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_clientes/consultar/:codcliente/:cnumquery")
+    Public Method consultarSA1() as Logical
+EndClass
+
+/* Métodos construtores */
+Method New() class Clientes
+Return self
+
+Method New() class consultarSA1
+Return self
+
+/* GETs */
+Method getCgcCliente() as Character class Clientes
+Return ::cCgcCliente
+
+Method getEstCliente() as Character class Clientes
+Return ::cEstCliente
+
+Method getNomeCliente() as Character class Clientes
+Return ::cNomeCliente
+
+Method getNonRezCliente() as Character class Clientes
+Return ::cNonRezCliente
+
+Method getSearch() as Character class Clientes
+Return ::cSearch
+
+Method getCNumQuery() as Character class Clientes
+Return ::cNumQuery
+
+/* SETs */
+Method setCgcCliente(c) class Clientes
+    ::cCgcCliente := AllTrim(c)
+Return
+
+Method setEstCliente(c) class Clientes
+    ::cEstCliente := AllTrim(c)
+Return
+
+Method setMunCliente(c) class Clientes
+    ::cMunCliente := AllTrim(c)
+Return
+
+Method setNomeCliente(c) class Clientes
+    ::cNomeCliente := AllTrim(c)
+Return
+
+Method setNonRezCliente(c) class Clientes
+    ::cNonRezCliente := AllTrim(c)
+Return
+
+Method setSearch(c) class Clientes
+    ::cSearch := AllTrim(c)
+Return
+
+Method setCNumQuery(c) class Clientes
+    ::cNumQuery := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+| Nome     : dadosSA1                                                              |
+| Descricao: Executa a query na SA1 e posiciona área alias BCLIENTES               |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 08/12/2025                                                             |
+\==================================================================================/
+*/
+Method dadosSA1() as Logical Class Clientes
+
+    Local cCgcCliente := AllTrim(::getCgcCliente()) as Character
+    Local cNumQuery   := AllTrim(::getCNumQuery()) as Character
+    Local cFilter := "" as Character
+    Local lRetorno := .F. as Logical
+
+    // garante que a area BCLIENTES esteja fechada antes de abrir o alias
+    If (Select("BCLIENTES") <> 0)
+        dbSelectArea("BCLIENTES")
+        dbCloseArea()
+    EndIf
+
+    // monta filtro dinâmico que será interpolado com %Exp:
+    // exemplo resultante: (SA1.A1_CGC LIKE '%123%' OR SA1.A1_NOME LIKE '%123%' OR SA1.A1_NREDUZ LIKE '%123%')
+    cFilter := "%(SA1.A1_CGC LIKE '" + cCgcCliente + "%' OR SA1.A1_NOME LIKE '%" + cCgcCliente + "%' OR SA1.A1_NREDUZ LIKE '%" + cCgcCliente + "%')%"
+
+    // Existem duas opções conforme tua regra:
+    // cnumquery == "1" -> sem filtro (retorna top 100)
+    // cnumquery == "2" -> aplica o filtro montado
+    If cNumQuery == "1"
+        BeginSql Alias "BCLIENTES"
+            SELECT
+                TOP 100 A1_CGC,
+                A1_EST,
+                A1_MUN,
+                A1_NOME,
+                A1_NREDUZ
+            FROM
+                %Table:SA1% SA1 (NOLOCK)
+            WHERE
+                SA1.D_E_L_E_T_ = ''
+                AND SA1.A1_FILIAL = ''
+                AND SA1.A1_CGC <> ''
+            ORDER BY
+                SA1.A1_NOME ASC
+        EndSql
+    ElseIf cNumQuery == "2"
+        BeginSql Alias "BCLIENTES"
+            SELECT
+                TOP 100 A1_CGC,
+                A1_EST,
+                A1_MUN,
+                A1_NOME,
+                A1_NREDUZ
+            FROM
+                %Table:SA1% SA1 (NOLOCK)
+            WHERE
+                SA1.D_E_L_E_T_ = ''
+                AND SA1.A1_FILIAL = ''
+                AND SA1.A1_CGC <> ''
+                AND %Exp:cFilter%
+            ORDER BY
+                SA1.A1_NOME ASC
+        EndSql
+
+    EndIf
+
+    // Se existir registro, popula atributos da classe (posiciona no primeiro registro)
+    If !BCLIENTES->(Eof())
+        ::setCgcCliente(BCLIENTES->A1_CGC)
+        ::setEstCliente(BCLIENTES->A1_EST)
+        ::setMunCliente(BCLIENTES->A1_MUN)
+        ::setNomeCliente(BCLIENTES->A1_NOME)
+        ::setNonRezCliente(BCLIENTES->A1_NREDUZ)
+        lRetorno := .T.
+    EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+| Nome     : consultarSA1                                                          |
+| Descricao: Endpoint GET: valida parametros e retorna lista de clientes (JSON)    |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 08/12/2025                                                             |
+\==================================================================================/
+*/
+Method consultarSA1() as Logical class consultarSA1
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai (mantive por padrão)
+
+    oRetorno["retorno"] := {}
+
+    // pega parametros da rota
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+
+        // Valida campo obrigatório: codcliente
+        If Empty(AllTrim(jPathParams["codcliente"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codcliente"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        Else
+            // seta o codcliente (termo de busca) na instância
+            ::setCgcCliente(jPathParams["codcliente"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+
+            // garante a area/alias BCLIENTES fechada antes de usar
+            If (Select("BCLIENTES") <> 0)
+                dbSelectArea("BCLIENTES")
+                dbCloseArea()
+            EndIf
+
+            // executa a query (dadosSA1 usa o valor de ::cCgcCliente e jPathParams)
+            lRetorno := ::dadosSA1(jPathParams)
+
+            // Se retornou registros, faz loop e monta JSON
+            If !BCLIENTES->(Eof())
+                While !BCLIENTES->(Eof())
+                    jJsonItem := JsonObject():New()
+                    jJsonItem['codcliente'] := AllTrim(BCLIENTES->A1_CGC)
+                    jJsonItem['nome']       := AllTrim(BCLIENTES->A1_NOME)
+                    jJsonItem['nreduz']    := AllTrim(BCLIENTES->A1_NREDUZ)
+                    jJsonItem['est']       := AllTrim(BCLIENTES->A1_EST)
+                    jJsonItem['mun']       := AllTrim(BCLIENTES->A1_MUN)
+                    jJsonItem['message']   := "Registro encontrado."
+                    jJsonItem['code']      := 200
+
+                    aAdd(oRetorno["retorno"], jJsonItem)
+                    BCLIENTES->(DBSkip())
+                End
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API com tratamento
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

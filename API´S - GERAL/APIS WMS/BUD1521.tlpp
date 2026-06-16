@@ -1,0 +1,224 @@
+#Include "RWMAKE.CH"
+#Include "TOPCONN.CH"
+#Include "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#Include "tlpp-core.th"
+#Include "TOTVS.CH"
+
+Namespace pda_gaiola
+
+/*/{Protheus.doc} GaiolaInterface
+    Interface responsável pelos métodos da entidade Gaiola
+/*/
+Interface GaiolaInterface
+
+Public Method New()
+
+Public Method getCodigo() as Character
+Public Method getStatus() as Character
+Public Method getLocal() as Character
+
+Public Method setCodigo(c)
+Public Method setStatus(c)
+Public Method setLocal(c)
+
+EndInterface
+
+
+/*/{Protheus.doc} AtualizarInterface
+    Interface responsável pela atualização da gaiola
+/*/
+Interface AtualizarInterface
+
+Public Method New()
+Public Method alterar() as Logical
+
+EndInterface
+
+/*/{Protheus.doc} Gaiola
+    Classe responsável pela entidade Gaiola
+/*/
+Class Gaiola Implements GaiolaInterface
+
+    Private Data cCodigo as Character
+    Private Data cStatus as Character
+    Private Data cLocal  as Character
+
+    Public Method New()
+
+    Public Method getCodigo() as Character
+    Public Method getStatus() as Character
+    Public Method getLocal()  as Character
+
+    Public Method setCodigo(c)
+    Public Method setStatus(c)
+    Public Method setLocal(c)
+
+EndClass
+
+
+/*/{Protheus.doc} Atualizar
+    Classe responsável pela atualização da Gaiola
+/*/
+Class Atualizar From Gaiola Implements AtualizarInterface
+
+    Public Method New()
+
+    @Put("pda/api_gaiola/alterar")
+    Public Method alterar() as Logical
+
+EndClass
+
+/*-------------------------------------------------------------------
+    CONSTRUTOR - GAIOLA
+-------------------------------------------------------------------*/
+Method New() Class Gaiola
+Return Self
+
+/*-------------------------------------------------------------------
+    GETs
+-------------------------------------------------------------------*/
+Method getCodigo() as Character Class Gaiola
+Return ::cCodigo
+
+Method getStatus() as Character Class Gaiola
+Return ::cStatus
+
+Method getLocal() as Character Class Gaiola
+Return ::cLocal
+
+
+/*-------------------------------------------------------------------
+    SETs
+-------------------------------------------------------------------*/
+Method setCodigo(c) Class Gaiola
+    ::cCodigo := AllTrim(c)
+Return
+
+
+Method setStatus(c) Class Gaiola
+    ::cStatus := AllTrim(c)
+Return
+
+
+Method setLocal(c) Class Gaiola
+    ::cLocal := AllTrim(c)
+Return
+
+
+/*-------------------------------------------------------------------
+    CONSTRUTOR - ATUALIZAR
+-------------------------------------------------------------------*/
+Method New() Class Atualizar
+
+    _Super:New()
+
+Return Self
+
+
+/*
+/==================================================================================\
+| Nome     : alterar                                                               |
+| Descricao: Atualiza tracking de gaiolas/carrinhos (1 ou N itens)                |
+\==================================================================================/
+*/
+Method alterar() as Logical Class Atualizar
+
+    Local cBody     := "" as Character
+    Local Nzui      := 0  as Numeric
+    Local cCodigo   := "" as Character
+    Local cStatus   := "" as Character
+    Local cLocal    := "" as Character
+    Local oBody     := JsonObject():new()
+    Local jJsonItem := JsonObject():New() 
+
+    Local oRetorno  := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    cBody := oRest:getBodyRequest()
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    FOR Nzui := 1 To Len(oBody)
+
+        jJsonItem := JsonObject():New()
+
+        // --- Validações do item atual ---
+        If Empty(oBody[Nzui]["codigo"])
+
+            jJsonItem["item"]    := Nzui
+            jJsonItem["message"] := "O campo (codigo) nao foi informado!"
+            jJsonItem["code"]    := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+            Loop
+
+        ElseIf Empty(oBody[Nzui]["status"])
+
+            jJsonItem["item"]    := Nzui
+            jJsonItem["message"] := "O campo (status) nao foi informado!"
+            jJsonItem["code"]    := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+            Loop
+
+        ElseIf Empty(oBody[Nzui]["local"])
+
+            jJsonItem["item"]    := Nzui
+            jJsonItem["message"] := "O campo (local) nao foi informado!"
+            jJsonItem["code"]    := 4
+            aAdd(oRetorno["retorno"], jJsonItem)
+            Loop
+
+        EndIf
+
+        // --- Atribuição e busca no banco ---
+        ::setCodigo(oBody[Nzui]["codigo"])
+        ::setStatus(oBody[Nzui]["status"])
+        ::setLocal(oBody[Nzui]["local"])
+
+        cCodigo := ::getCodigo()
+        cStatus := ::getStatus()
+        cLocal  := ::getLocal()
+
+        DbSelectArea("ZDT")
+        ZDT->(DbSetOrder(1))
+
+        If ZDT->(DbSeek(xFilial("ZDT") + cCodigo))
+
+            RecLock("ZDT", .F.)
+            ZDT->ZDT_STATUS := cStatus
+            ZDT->ZDT_LOCFIS := cLocal
+            ZDT->(MsUnlock())
+
+            jJsonItem["item"]    := Nzui
+            jJsonItem["codigo"]  := cCodigo
+            jJsonItem["message"] := "Gaiola/Carrinho atualizada com sucesso"
+            jJsonItem["code"]    := 200
+
+        Else
+
+            jJsonItem["item"]    := Nzui
+            jJsonItem["codigo"]  := cCodigo
+            jJsonItem["message"] := "Registro nao encontrado"
+            jJsonItem["code"]    := 4
+
+        EndIf
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+
+    NEXT Nzui
+
+    BEGIN SEQUENCE
+
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+
+        RECOVER
+
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+
+    END SEQUENCE
+
+Return .T.

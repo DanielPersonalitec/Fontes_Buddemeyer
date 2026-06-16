@@ -1,0 +1,227 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace custom.endLogistica
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API - ENDERECAMENTO LOGISTICA                                !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API - ENDERECAMENTO LOGISTICA                                !
+! Data       ! 29-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface endLogisticaInterface
+Public Method New()
+
+Public Method getCod() as Character
+
+Public Method setCod(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class endLogistica Implements endLogisticaInterface
+
+    Private data cCodPro as Character
+
+    Public Method New()
+
+    Public Method getCod() as Character
+
+    Public Method setCod(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From endLogistica Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_endlog/consultar/:cod")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe endLogistica
+Method New() class endLogistica
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCod() as Character class endLogistica
+Return ::cCodPro
+
+// Metodos SETs
+Method setCod(c) class endLogistica
+    ::cCodPro := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                         |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do endLogistica              |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 29/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class endLogistica
+
+    Local cCodPro := ::getCod() as Character
+
+    Local lRetorno := .F. as Logical
+
+    If (Select("ENDLOG") <> 0)
+        dbSelectArea("ENDLOG")
+        dbCloseArea()
+    EndIf
+
+    BeginSql alias 'ENDLOG'
+        select
+            top 2 *,
+            D_E_L_E_T_ DEL
+        from
+            %Table:ZD4% a
+        where
+            a.ZD4_CODPRO = %Exp:cCodPro% //'F41256110010110023'
+            and a.ZD4_ENDERE not like '%GA%'
+            and a.ZD4_ENDERE not like '%AM%'
+            and a.ZD4_TPMOV = 'ABASTECIMENTO'
+        order by
+            7 desc
+    EndSql
+
+    If !ENDLOG->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While ENDLOG->(!eof())
+        jJsonItem := JsonObject():New()
+
+        jJsonItem['message'] := "Registro encontrado."
+        jJsonItem['code'] := 200
+        jJsonItem['cFil'] := ENDLOG->ZD4_FILIAL
+        jJsonItem['cEnder'] := ENDLOG->ZD4_ENDERE
+        jJsonItem['cCodPro'] := ENDLOG->ZD4_CODPRO
+        jJsonItem['cOp'] := ENDLOG->ZD4_OP
+        jJsonItem['nQtd'] := ENDLOG->ZD4_QTD
+        jJsonItem['cTpMov'] := ENDLOG->ZD4_TPMOV
+        jJsonItem['dDataMov'] := ENDLOG->ZD4_DTMOV
+        jJsonItem['cHrMov'] := ENDLOG->ZD4_HRMOV
+        jJsonItem['cUsuMov'] := ENDLOG->ZD4_USUMOV
+        jJsonItem['cDelete'] := ENDLOG->DEL
+        jJsonItem['cRecno'] := ENDLOG->R_E_C_N_O_
+        jJsonItem['Recdel'] := ENDLOG->R_E_C_D_E_L_
+        jJsonItem['cUsuMo2'] := ENDLOG->ZD4_USUMO2
+        jJsonItem['cCodApo'] := ENDLOG->ZD4_CODAPO
+        jJsonItem['cCodLid'] := ENDLOG->ZD4_CODLID
+        jJsonItem['cDispcx'] := ENDLOG->ZD4_DISPCX
+        jJsonItem['cBlqOE'] := ENDLOG->ZD4_BLQOE
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        ENDLOG->(dbskip())
+
+    enddo
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca dos endereçamentos                           !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    lRetorno := ::dados()
+
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cod"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setCod(jPathParams["cod"])
+
+            lRetorno := ::dados()
+
+            If !lRetorno
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 3
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+

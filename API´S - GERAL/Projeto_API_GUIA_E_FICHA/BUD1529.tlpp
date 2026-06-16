@@ -1,0 +1,237 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace roteirooperacoes
+
+/*
+/============================================================================\
+|Nome              : API Roteiro de Operacoes                                |
+|============================================================================|
+|Descricao         : API que realiza as operacoes do Roteiro de Operacoes    |
+|============================================================================|
+|Responsavel       : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 01/06/2026                                              |
+\============================================================================/
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface RoteiroInterface
+Public Method New()
+Public Method getCod() as Character
+Public Method getOper() as Character
+Public Method getRecurso() as Character
+Public Method setCod(c)
+Public Method setOper(c)
+Public Method setRecurso(c)
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Roteiro Implements RoteiroInterface
+
+	Private data cCod     as Character
+	Private data cOper    as Character
+	Private data cRecurso as Character
+	Public Method New()
+	Public Method getCod()     as Character
+	Public Method getOper()    as Character
+	Public Method getRecurso() as Character
+	Public Method setCod(c)
+	Public Method setOper(c)
+	Public Method setRecurso(c)
+	Public Method dados() as Logical
+
+EndClass
+
+Class Consultar From Roteiro Implements ConsultarInterface
+	Public Method New()
+	@Get("/api_roteiro/consultar/:cod")
+	Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+Method New() class Roteiro
+Return self
+
+Method New() class Consultar
+	_Super:New()
+Return self
+
+// Metodos GETs
+Method getCod() as Character class Roteiro
+Return ::cCod
+Method getOper() as Character class Roteiro
+Return ::cOper
+Method getRecurso() as Character class Roteiro
+Return ::cRecurso
+
+// Metodos SETs
+Method setCod(c) class Roteiro
+	::cCod := AllTrim(c)
+Return
+Method setOper(c) class Roteiro
+	::cOper := AllTrim(c)
+Return
+Method setRecurso(c) class Roteiro
+	::cRecurso := AllTrim(c)
+Return
+
+/* ----------------------------------------- */
+
+/*
+/==================================================================================\
+|Nome              : Dados do Roteiro de Operacoes                                 |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do Roteiro de Operacoes      |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 01/06/2026                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Roteiro
+
+	Local lRetorno := .F. as Logical
+	Local cCod := ::getCod() as Character
+
+	If (Select("BSG2") <> 0)
+		dbSelectArea("BSG2")
+		dbCloseArea()
+	EndIf
+
+	BeginSql alias 'BSG2'
+		SELECT
+			G2_PRODUTO,
+			G2_OPERZZV,
+			G2_RECURSO
+		FROM
+			%Table:SG2% (NOLOCK) SG2
+		WHERE
+			SG2.%notDel%
+			AND G2_FILIAL = %xFilial:SG2%
+			AND G2_PRODUTO = %Exp:cCod%
+		ORDER BY
+			G2_DESCRI ASC
+	EndSql
+
+	// Se existir o Roteiro
+	If !BSG2->(Eof())
+		lRetorno := .T.
+	EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+|Nome              : Consultar Roteiro de Operacoes                                |
+|==================================================================================|
+|Descricao         : Este metodo consulta os dados do Roteiro de Operacoes         |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 01/06/2026                                                    |
+\==================================================================================/
+*/
+
+Method consultar() as Logical Class Consultar
+
+	Local lRetorno := .F. as Logical
+	Local jPath := JsonObject():New() as Json
+	Public oRetorno  := JsonObject():New() as Object
+	Public jJsonItem := JsonObject():New() as Json
+
+	_Super:New()
+	oRetorno["retorno"] := {}
+
+	// Recebe os parametros
+	jPath := oRest:getPathParamsRequest()
+
+	// Se foram passados os parametros
+	If (jPath == Nil)
+		jJsonItem['message'] := "Os parametros nao foram informados!"
+		jJsonItem['code'] := 1
+		aAdd(oRetorno["retorno"], jJsonItem)
+		ConOut("[API ROTEIRO] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+	Else
+		// Recebe a informacao
+		::setCod(jPath["cod"])
+
+		// Valida parametros em branco
+		If Empty(::getCod())
+			jJsonItem['message'] := "O codigo do produto nao foi informado!"
+			jJsonItem['code'] := 2
+			aAdd(oRetorno["retorno"], jJsonItem)
+			ConOut("[API ROTEIRO] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+		Else
+			// Busca os dados do Roteiro
+			lRetorno := ::dados()
+
+			// Se nao encontrar
+			If !lRetorno
+				jJsonItem['message'] := "Nenhum registro foi encontrado para o produto: " + ::getCod()
+				jJsonItem['code'] := 3
+				aAdd(oRetorno["retorno"], jJsonItem)
+				ConOut("[API ROTEIRO] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+			Else
+				// Para cada registro encontrado
+				While !BSG2->(Eof())
+					jJsonItem := JsonObject():New()
+
+					::setCod(BSG2->G2_PRODUTO)
+					::setOper(BSG2->G2_OPERZZV)
+					::setRecurso(BSG2->G2_RECURSO)
+
+					jJsonItem['message'] := "Registro encontrado com sucesso!"
+					jJsonItem['code']    := 200
+					jJsonItem['codigo']  := ::getCod()
+					jJsonItem['operacao']:= ::getOper()
+					jJsonItem['recurso'] := ::getRecurso()
+
+					aAdd(oRetorno["retorno"], jJsonItem)
+					ConOut("[API ROTEIRO] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+					BSG2->(dbSkip())
+				EndDo
+
+				BSG2->(dbCloseArea())
+			EndIf
+		EndIf
+	EndIf
+
+	// Adiciona resposta da API
+	BEGIN SEQUENCE
+		oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+		oRest:setStatusCode(200)
+		RECOVER
+		oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+		oRest:setStatusCode(500)
+	END SEQUENCE
+
+Return .T.

@@ -1,0 +1,223 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace operacoes
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API OPERACOES                                                !
+! Autor      ! Daniel Victor da Rosa - Personalitec                         !
+! Descricao  ! API OPERACOES                                                !
+! Data       ! 17-11-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/* Interfaces */
+Interface OperacaoInterface
+
+Public Method New()
+Public Method getCodProdutoSG2() as Character
+Public Method getRecursoSG2() as Character
+Public Method getOperacaoSG2() as Character
+
+Public Method setCodProdutoSG2(c)
+Public Method setRecursoSG2(c)
+Public Method setOperacaoSG2(c)
+
+Public Method dadosSG2() as Logical
+
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultarSG2() as Logical
+EndInterface
+
+/* Classes */
+Class Operacao Implements OperacaoInterface
+
+    Private data cCodProdutoSG2 as Character
+    Private data cRecursoSG2 as Character
+    Private data cOperacaoSG2 as Character
+
+    Public Method New()
+
+    Public Method getCodProdutoSG2() as Character
+    Public Method getRecursoSG2() as Character
+    Public Method getOperacaoSG2() as Character
+
+    Public Method setCodProdutoSG2(c)
+    Public Method setRecursoSG2(c)
+    Public Method setOperacaoSG2(c)
+
+    Public Method dadosSG2() as Logical
+
+EndClass
+
+Class consultarSG2 From Operacao Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_operacoes/consultar/:codproduto")
+    Public Method consultarSG2() as Logical
+EndClass
+
+/* Métodos construtores */
+Method New() class Operacao
+Return self
+
+Method New() class consultarSG2
+Return self
+
+/* GETs */
+Method getCodProdutoSG2() as Character class Operacao
+Return ::cCodProdutoSG2
+
+Method getRecursoSG2() as Character class Operacao
+Return ::cRecursoSG2
+
+Method getOperacaoSG2() as Character class Operacao
+Return ::cOperacaoSG2
+
+/* SETs */
+Method setCodProdutoSG2(c) class Operacao
+    ::cCodProdutoSG2 := AllTrim(c)
+Return
+
+Method setRecursoSG2(c) class Operacao
+    ::cRecursoSG2 := AllTrim(c)
+Return
+
+Method setOperacaoSG2(c) class Operacao
+    ::cOperacaoSG2 := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+| Nome     : dadosSG2                                                              |
+| Descricao: Executa a query na SG2 e posiciona área alias BOPERACAO               |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 08/12/2025                                                             |
+\==================================================================================/
+*/
+Method dadosSG2() as Logical Class Operacao
+
+    Local cCodProduto := ::getCodProdutoSG2() as Character
+    Local lRetorno := .F. as Logical
+
+    // garante que a area BOPERACAO esteja fechada antes de abrir o alias
+    If (Select("BOPERACAO") <> 0)
+        dbSelectArea("BOPERACAO")
+        dbCloseArea()
+    EndIf
+
+    // BeginSql: usar variável local para interpolação com %Exp:
+    BeginSql Alias "BOPERACAO"
+        SELECT
+            G2_RECURSO,
+            G2_OPERZZV,
+            G2_PRODUTO
+        FROM
+            %Table:SG2% G2 (NOLOCK)
+        WHERE
+            G2.D_E_L_E_T_ = ''
+            AND (
+                G2.G2_FILIAL = '01'
+                OR G2.G2_FILIAL = ''
+            )
+            AND G2.G2_PRODUTO = %Exp:cCodProduto%
+        ORDER BY
+            G2.G2_OPERZZV ASC
+    EndSql
+
+    // Se existir registro, popula atributos da classe
+    If !BOPERACAO->(Eof())
+        ::setRecursoSG2(BOPERACAO->G2_RECURSO)
+        ::setOperacaoSG2(BOPERACAO->G2_OPERZZV)
+        ::setCodProdutoSG2(BOPERACAO->G2_PRODUTO)
+        lRetorno := .T.
+    EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+| Nome     : consultarSG2                                                          |
+| Descricao: Endpoint GET: valida parametros e retorna lista de operacoes (JSON)   |
+| Autor    : Daniel Victor da Rosa - Personalitec                                  |
+| Data     : 08/12/2025                                                             |
+\==================================================================================/
+*/
+Method consultarSG2() as Logical class consultarSG2
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai (mantive por padrão)
+
+    oRetorno["retorno"] := {}
+
+    // pega parametros da rota
+    jPathParams := oRest:getPathParamsRequest()
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+
+        // Valida campo obrigatório: codproduto
+        If Empty(AllTrim(jPathParams["codproduto"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: codproduto"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        Else
+            // seta o codproduto na instância
+            ::setCodProdutoSG2(jPathParams["codproduto"])
+
+            // garante a area/alias BOPERACAO fechada antes de usar
+            If (Select("BOPERACAO") <> 0)
+                dbSelectArea("BOPERACAO")
+                dbCloseArea()
+            EndIf
+
+            // executa a query (dadosSG2 usa o valor de ::cCodProdutoSG2)
+            lRetorno := ::dadosSG2()
+
+            // Se retornou registros, faz loop e monta JSON
+            If !BOPERACAO->(Eof())
+                While !BOPERACAO->(Eof())
+                    jJsonItem := JsonObject():New()
+                    jJsonItem['codproduto'] := AllTrim(BOPERACAO->G2_PRODUTO)
+                    jJsonItem['message']    := "Registro encontrado."
+                    jJsonItem['code']       := 200
+                    jJsonItem['operacao']   := AllTrim(BOPERACAO->G2_OPERZZV)
+                    jJsonItem['recurso']    := AllTrim(BOPERACAO->G2_RECURSO)
+
+                    aAdd(oRetorno["retorno"], jJsonItem)
+                    BOPERACAO->(DBSkip())
+                End
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API com tratamento
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

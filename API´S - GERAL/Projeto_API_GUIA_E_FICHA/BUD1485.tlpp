@@ -1,0 +1,224 @@
+#INCLUDE "RWMAKE.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+#Include "Tlpp-Rest.th"
+#Include "Protheus.ch"
+#include "tlpp-core.th"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "colors.ch"
+#INCLUDE "ap5mail.ch"
+
+namespace custom.primeiraXSegunda
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API PRIMEIRA X SEGUNDA QUALIDADE                             !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API PRIMEIRA X SEGUNDA QUALIDADE                             !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface priXsegInterface
+Public Method New()
+
+Public Method getCodBar() as Character
+Public Method getCod() as Character
+
+Public Method setCodBar(c)
+Public Method setCod(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class priXseg Implements priXsegInterface
+
+    Private data cCodBar as Character
+    Private data cCod as Character
+
+    Public Method New()
+
+    Public Method getCodBar() as Character
+    Public Method getCod() as Character
+
+    Public Method setCodBar(c)
+    Public Method setCod(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From priXseg Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_prixseg/consultar/:cod")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe priXseg
+Method New() class priXseg
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCodBar() as Character class priXseg
+Return ::cCodBar
+
+Method getCod() as Character class priXseg
+Return ::cCod
+
+// Metodos SETs
+Method setCodBar(c) class priXseg
+    ::cCodBar := AllTrim(c)
+Return
+
+Method setCod(c) class priXseg
+    ::cCod := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do priXseg                  |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 15/12/2025                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class priXseg
+
+    Local cCod := ::getCod() as Character
+
+    Local lRetorno := .F. as Logical
+
+    If (Select("PRIXSEG") <> 0)
+        dbSelectArea("PRIXSEG")
+        dbCloseArea()
+    EndIf
+
+    BeginSql alias 'PRIXSEG'
+        SELECT B1_CODBAR FROM %Table:ZAA%  ZA0 (NOLOCK)
+        INNER JOIN  %Table:SB1%  B1 ON B1_FILIAL = ''
+                AND B1_COD = ZAA_CODSEG
+                AND B1.%notDel%
+        WHERE ZAA_FILIAL = '01'
+        AND ZAA_CODPRI = %Exp:cCod%  //'F45236630010110004'
+        AND ZA0.%notDel%
+    EndSql
+
+    If !PRIXSEG->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While PRIXSEG->(!eof())
+        jJsonItem := JsonObject():New()
+
+        ::setCodBar(PRIXSEG->B1_CODBAR)
+
+        jJsonItem['message'] := "Registro encontrado."
+        jJsonItem['code'] := 200
+        jJsonItem['codbar'] := ::getCodBar()
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        PRIXSEG->(dbskip())
+
+    enddo
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de operadores                                !
+! Data       ! 22-12-2025                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+
+    lRetorno := ::dados()
+
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cod"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setCod(jPathParams["cod"])
+
+            lRetorno := ::dados()
+
+            If lRetorno
+                jJsonItem['message'] := "Registro encontrado."
+                jJsonItem['code'] := 200
+                jJsonItem['codbar'] := ::getCodBar()
+            Else
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 3
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+

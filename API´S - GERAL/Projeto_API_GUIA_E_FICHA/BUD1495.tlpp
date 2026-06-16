@@ -1,0 +1,884 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace producao_horaria
+
+/*
+/============================================================================\
+|Nome              : API Producao Horaria                                    |
+|============================================================================|
+|Descricao         : API que realiza as operacoes da Producao Horaria        |
+|============================================================================|
+|Responsavel       : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                    |
+|============================================================================|
+|Data de Criacao   : 02/02/2026                                              |
+\============================================================================/
+*/
+
+/*
+/==================\
+| INTERFACES       |
+\==================/
+*/
+
+Interface ProducaoHorariaInterface
+Public Method New()
+
+Public Method getOpeMaquina()        as Character
+Public Method getPyMaquina()         as Character
+Public Method getRecurso()           as Character
+Public Method getRecno()             as Integer
+Public Method getDescricao()         as Character
+Public Method getOperacao()          as Character
+Public Method getDiametro()          as Double
+Public Method getRpm()               as Double
+Public Method getNumeroSaidas()      as Double
+Public Method getConstante()         as Double
+Public Method getTitulo()            as Double
+Public Method getProducaoHoraria()   as Double
+Public Method getMetrosPorMinuto()   as Double
+Public Method getVelocidade()        as Double
+Public Method getFios()              as Double
+
+Public Method setOpeMaquina(c)
+Public Method setPyMaquina(c)
+Public Method setRecurso(c)
+Public Method setRecno(n)
+Public Method setDescricao(c)
+Public Method setOperacao(c)
+Public Method setDiametro(e)
+Public Method setRpm(e)
+Public Method setNumeroSaidas(e)
+Public Method setConstante(e)
+Public Method setTitulo(e)
+Public Method setProducaoHoraria(e)
+Public Method setMetrosPorMinuto(e)
+Public Method setVelocidade(e)
+Public Method setFios(e)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+
+Public Method consultar()       as Logical
+Public Method proximoOperacao() as Logical
+Public Method listar()          as Logical
+EndInterface
+
+Interface CadastrarInterface
+Public Method New()
+
+Public Method cadastrar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class ProducaoHoraria Implements ProducaoHorariaInterface
+
+    Private data cOpeMaquina        as Character
+    Private data cPyMaquina         as Character
+    Private data cRecurso           as Character
+    Private data nRecno             as Integer
+    Private data cDescricao         as Character
+    Private data cOperacao          as Character
+    Private data eDiametro          as Double
+    Private data eRpm               as Double
+    Private data eNumeroSaidas      as Double
+    Private data eConstante         as Double
+    Private data eTitulo            as Double
+    Private data eProducaoHoraria   as Double
+    Private data eMetrosPorMinuto   as Double
+    Private data eVelocidade        as Double
+    Private data eFios              as Double
+
+    Public Method New()
+
+    Public Method getOpeMaquina()        as Character
+    Public Method getPyMaquina()         as Character
+    Public Method getRecurso()           as Character
+    Public Method getRecno()             as Integer
+    Public Method getDescricao()         as Character
+    Public Method getOperacao()          as Character
+    Public Method getDiametro()          as Double
+    Public Method getRpm()               as Double
+    Public Method getNumeroSaidas()      as Double
+    Public Method getConstante()         as Double
+    Public Method getTitulo()            as Double
+    Public Method getProducaoHoraria()   as Double
+    Public Method getMetrosPorMinuto()   as Double
+    Public Method getVelocidade()        as Double
+    Public Method getFios()              as Double
+
+    Public Method setOpeMaquina(c)
+    Public Method setPyMaquina(c)
+    Public Method setRecurso(c)
+    Public Method setRecno(n)
+    Public Method setDescricao(c)
+    Public Method setOperacao(c)
+    Public Method setDiametro(e)
+    Public Method setRpm(e)
+    Public Method setNumeroSaidas(e)
+    Public Method setConstante(e)
+    Public Method setTitulo(e)
+    Public Method setProducaoHoraria(e)
+    Public Method setMetrosPorMinuto(e)
+    Public Method setVelocidade(e)
+    Public Method setFios(e)
+
+    Public Method dados() as Logical
+
+EndClass
+
+Class Consultar From ProducaoHoraria Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_producaohoraria/consultar/:operacao/:recurso/:recno")
+    Public Method consultar() as Logical
+
+    @Get("/api_producaohoraria/proximooperacao/:operacao/:recurso")
+    Public Method proximoOperacao() as Logical
+
+    @Get("/api_producaohoraria/listar/:orderCampo/:orderTipo")
+    Public Method listar() as Logical
+EndClass
+
+Class Cadastrar From ProducaoHoraria Implements CadastrarInterface
+    Public Method New()
+
+    @Post("/api_producaohoraria/cadastrar")
+    Public Method cadastrar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+Method New() class ProducaoHoraria
+Return self
+
+Method New() class Consultar
+    _Super:New()
+Return self
+
+Method New() class Cadastrar
+    _Super:New()
+Return self
+
+/*
+GETS
+*/
+
+Method getOpeMaquina() as Character class ProducaoHoraria
+Return StrTran(AllTrim(::cOpeMaquina), "'", "''")
+
+Method getPyMaquina() as Character class ProducaoHoraria
+Return StrTran(AllTrim(::cPyMaquina), "'", "''")
+
+Method getRecurso() as Character class ProducaoHoraria
+Return AllTrim(::cRecurso)
+
+Method getRecno() as Integer class ProducaoHoraria
+Return Int(::nRecno)
+
+Method getDescricao() as Character class ProducaoHoraria
+Return StrTran(AllTrim(::cDescricao), "'", "''")
+
+Method getOperacao() as Character class ProducaoHoraria
+Return AllTrim(::cOperacao)
+
+Method getDiametro() as Double class ProducaoHoraria
+Return ::eDiametro
+
+Method getRpm() as Double class ProducaoHoraria
+Return ::eRpm
+
+Method getNumeroSaidas() as Double class ProducaoHoraria
+Return ::eNumeroSaidas
+
+Method getConstante() as Double class ProducaoHoraria
+Return ::eConstante
+
+Method getTitulo() as Double class ProducaoHoraria
+Return ::eTitulo
+
+Method getProducaoHoraria() as Double class ProducaoHoraria
+Return ::eProducaoHoraria
+
+Method getMetrosPorMinuto() as Double class ProducaoHoraria
+Return ::eMetrosPorMinuto
+
+Method getVelocidade() as Double class ProducaoHoraria
+Return ::eVelocidade
+
+Method getFios() as Double class ProducaoHoraria
+Return ::eFios
+
+/*
+ SETS
+*/
+
+Method setOpeMaquina(c) class ProducaoHoraria
+    ::cOpeMaquina := AllTrim(c)
+Return
+
+Method setPyMaquina(c) class ProducaoHoraria
+    ::cPyMaquina := AllTrim(c)
+Return
+
+Method setRecurso(c) class ProducaoHoraria
+    ::cRecurso := AllTrim(c)
+Return
+
+Method setRecno(n) class ProducaoHoraria
+    ::nRecno := Int(n)
+Return
+
+Method setDescricao(c) class ProducaoHoraria
+    ::cDescricao := AllTrim(c)
+Return
+
+Method setOperacao(c) class ProducaoHoraria
+    ::cOperacao := AllTrim(c)
+Return
+
+Method setDiametro(e) class ProducaoHoraria
+    ::eDiametro := e
+Return
+
+Method setRpm(e) class ProducaoHoraria
+    ::eRpm := e
+Return
+
+Method setNumeroSaidas(e) class ProducaoHoraria
+    ::eNumeroSaidas := e
+Return
+
+Method setConstante(e) class ProducaoHoraria
+    ::eConstante := e
+Return
+
+Method setTitulo(e) class ProducaoHoraria
+    ::eTitulo := e
+Return
+
+Method setProducaoHoraria(e) class ProducaoHoraria
+    ::eProducaoHoraria := e
+Return
+
+Method setMetrosPorMinuto(e) class ProducaoHoraria
+    ::eMetrosPorMinuto := e
+Return
+
+Method setVelocidade(e) class ProducaoHoraria
+    ::eVelocidade := e
+Return
+
+Method setFios(e) class ProducaoHoraria
+    ::eFios := e
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                         |
+|==================================================================================|
+|Descricao         : Busca registros da ZZV filtrados por operacao, recurso        |
+|                    e opcionalmente recno                                         |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 02/02/2026                                                    |
+\==================================================================================/
+*/
+Method dados() as Logical Class ProducaoHoraria
+
+    Local lRetorno    := .F. as Logical
+    Local cOpeMaquina := ::getOpeMaquina() as Character
+    Local cPyMaquina  := ::getPyMaquina()  as Character
+    Local nRecno      := ::getRecno()      as Integer
+    Local cFiltro     := ""                as Character
+
+    If (Select("Q_PRDHORAR") <> 0)
+        dbSelectArea("Q_PRDHORAR")
+        dbCloseArea()
+    EndIf
+
+    If nRecno > 0
+        cFiltro := "% AND ZZV.ZZV_OPER = '" + cOpeMaquina + "' AND ZZV.ZZV_RECURS = '" + cPyMaquina + "' AND ZZV.R_E_C_N_O_ = " + AllTrim(Str(nRecno)) + " %"
+    Else
+        cFiltro := "% AND ZZV.ZZV_OPER = '" + cOpeMaquina + "' AND ZZV.ZZV_RECURS = '" + cPyMaquina + "' %"
+    EndIf
+
+    BeginSql alias 'Q_PRDHORAR'
+        SELECT
+            TOP 1000 ZZV.R_E_C_N_O_ AS REC,
+            ZZV.ZZV_RECURS,
+            ZZV.ZZV_OPER,
+            ZZV.ZZV_DESCRI,
+            ZZV.ZZV_FILIAL,
+            ZZV.ZZV_PRODHR,
+            ZZV.ZZV_DIAMET,
+            ZZV.ZZV_RPM,
+            ZZV.ZZV_SAIDAS,
+            ZZV.ZZV_MMIN,
+            ZZV.ZZV_VELOCI,
+            ZZV.ZZV_FIOS,
+            ZZV.ZZV_CONST,
+            ZZV.ZZV_TITULO,
+            SH1.H1_DESCRI,
+            SH1.H1_UEP
+        FROM
+            %Table:ZZV% ZZV (NOLOCK)
+        INNER JOIN %Table:SH1% SH1 (NOLOCK)
+        ON SH1.H1_CODIGO = ZZV.ZZV_RECURS
+            AND SH1.H1_FILIAL = %xFilial:SH1%
+            AND SH1.D_E_L_E_T_ = ' '
+        WHERE
+            ZZV.ZZV_FILIAL = %xFilial:ZZV% %Exp:cFiltro%
+            AND ZZV.D_E_L_E_T_ = ' '
+        ORDER BY
+            ZZV.ZZV_OPER ASC
+    EndSql
+
+    If !Q_PRDHORAR->(Eof())
+        lRetorno := .T.
+    EndIf
+
+Return lRetorno
+
+/*
+/==================================================================================\
+|Nome              : consultar                                                     |
+|==================================================================================|
+|Descricao         : Consulta registros por operacao, recurso e recno.             |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 02/02/2026                                                    |
+\==================================================================================/
+*/
+Method consultar() as Logical Class Consultar
+
+    Local lRetorno  := .F. as Logical
+    Local jPath     := JsonObject():New() as Json
+    Local oRetorno  := JsonObject():New() as Object
+    Local jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    jPath := oRest:getPathParamsRequest()
+
+    If (jPath == Nil)
+        jJsonItem['message'] := "Os parametros nao foram informados!"
+        jJsonItem['code']    := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    ElseIf Empty(AllTrim(jPath["operacao"]))
+        jJsonItem['message'] := "O parametro obrigatorio (operacao) nao foi informado!"
+        jJsonItem['code']    := 2
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    ElseIf Empty(AllTrim(jPath["recurso"]))
+        jJsonItem['message'] := "O parametro obrigatorio (recurso) nao foi informado!"
+        jJsonItem['code']    := 3
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    Else
+        ::setOpeMaquina(jPath["operacao"])
+        ::setPyMaquina(jPath["recurso"])
+        ::setRecno(Val(jPath["recno"]))
+
+        lRetorno := ::dados()
+
+        If !lRetorno
+            jJsonItem['message'] := "Nenhum registro foi encontrado para os parametros informados!"
+            jJsonItem['code']    := 4
+            aAdd(oRetorno["retorno"], jJsonItem)
+            ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+        Else
+            While !Q_PRDHORAR->(Eof())
+                jJsonItem := JsonObject():New()
+
+                jJsonItem['message']        := "Registro encontrado com sucesso!"
+                jJsonItem['code']           := 200
+                jJsonItem['ZZV_RECURS']     := AllTrim(Q_PRDHORAR->ZZV_RECURS)
+                jJsonItem['ZZV_OPER']       := IIF(ValType(Q_PRDHORAR->ZZV_OPER) == "N", Transform(Q_PRDHORAR->ZZV_OPER, "@E 999"), AllTrim(Q_PRDHORAR->ZZV_OPER))
+                jJsonItem['ZZV_DESCRI']     := AllTrim(Q_PRDHORAR->ZZV_DESCRI)
+                jJsonItem['ZZV_FILIAL']     := AllTrim(Q_PRDHORAR->ZZV_FILIAL)
+                jJsonItem['ZZV_PRODHR']     := Q_PRDHORAR->ZZV_PRODHR
+                jJsonItem['ZZV_DIAMET']     := Q_PRDHORAR->ZZV_DIAMET
+                jJsonItem['ZZV_RPM']        := Q_PRDHORAR->ZZV_RPM
+                jJsonItem['ZZV_SAIDAS']     := Q_PRDHORAR->ZZV_SAIDAS
+                jJsonItem['ZZV_MMIN']       := Q_PRDHORAR->ZZV_MMIN
+                jJsonItem['ZZV_VELOCI']     := Q_PRDHORAR->ZZV_VELOCI
+                jJsonItem['ZZV_FIOS']       := Q_PRDHORAR->ZZV_FIOS
+                jJsonItem['ZZV_CONST']      := Q_PRDHORAR->ZZV_CONST
+                jJsonItem['ZZV_TITULO']     := Q_PRDHORAR->ZZV_TITULO
+                jJsonItem['H1_DESCRI']      := AllTrim(Q_PRDHORAR->H1_DESCRI)
+                jJsonItem['H1_UEP']         := Q_PRDHORAR->H1_UEP
+                jJsonItem['REC']            := Q_PRDHORAR->REC
+
+                aAdd(oRetorno["retorno"], jJsonItem)
+
+                Q_PRDHORAR->(dbSkip())
+            EndDo
+
+            ConOut("[API PRODUCAO HORARIA] - 200 - " + AllTrim(Str(Len(oRetorno["retorno"]))) + " registro(s) encontrado(s).")
+
+            Q_PRDHORAR->(dbCloseArea())
+        EndIf
+    EndIf
+
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+/*
+/==================================================================================\
+|Nome              : proximoOperacao                                               |
+|==================================================================================|
+|Descricao         : Retorna o proximo numero de operacao disponivel (MAX + 1)     |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 02/02/2026                                                    |
+\==================================================================================/
+*/
+Method proximoOperacao() as Logical Class Consultar
+
+    Local lRetorno    := .F. as Logical
+    Local jPath       := JsonObject():New() as Json
+    Local oRetorno    := JsonObject():New() as Object
+    Local jJsonItem   := JsonObject():New() as Json
+    Local cOpeMaquina := ""                 as Character
+    Local cPyMaquina  := ""                 as Character
+
+    oRetorno["retorno"] := {}
+
+    jPath := oRest:getPathParamsRequest()
+
+    If (jPath == Nil)
+        jJsonItem['message'] := "Os parametros nao foram informados!"
+        jJsonItem['code']    := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    ElseIf Empty(AllTrim(jPath["operacao"]))
+        jJsonItem['message'] := "O parametro obrigatorio (operacao) nao foi informado!"
+        jJsonItem['code']    := 2
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    ElseIf Empty(AllTrim(jPath["recurso"]))
+        jJsonItem['message'] := "O parametro obrigatorio (recurso) nao foi informado!"
+        jJsonItem['code']    := 3
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    Else
+        ::setOpeMaquina(jPath["operacao"])
+        ::setPyMaquina(jPath["recurso"])
+
+        cOpeMaquina := ::getOpeMaquina()
+        cPyMaquina  := ::getPyMaquina()
+
+        If (Select("Q_PRDHORAR") <> 0)
+            dbSelectArea("Q_PRDHORAR")
+            dbCloseArea()
+        EndIf
+
+        BeginSql Alias "Q_PRDHORAR"
+            SELECT
+                COALESCE(MAX(ZZV_OPER), 0) + 1 AS ZZV_OPER
+            FROM
+                %Table:ZZV% ZZV (NOLOCK)
+            WHERE
+                ZZV.ZZV_FILIAL = %xFilial:ZZV%
+                AND (
+                    ZZV.ZZV_RECURS = %Exp:cOpeMaquina%
+                    OR ZZV.ZZV_RECURS = %Exp:cPyMaquina%
+                )
+                AND %notDel%
+        EndSql
+
+        If !Q_PRDHORAR->(Eof())
+            lRetorno := .T.
+        EndIf
+
+        If !lRetorno
+            jJsonItem['message'] := "Nenhum registro foi encontrado para os parametros informados!"
+            jJsonItem['code']    := 4
+            aAdd(oRetorno["retorno"], jJsonItem)
+            ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+        Else
+            jJsonItem['message']  := "Proximo numero de operacao encontrado com sucesso!"
+            jJsonItem['code']     := 200
+            jJsonItem['ZZV_OPER'] := Q_PRDHORAR->ZZV_OPER
+            aAdd(oRetorno["retorno"], jJsonItem)
+            ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+            Q_PRDHORAR->(dbCloseArea())
+        EndIf
+    EndIf
+
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+
+/*
+/==================================================================================\
+|Nome              : listar                                                        |
+|==================================================================================|
+|Descricao         : Lista registros da ZZV com filtros dinamicos.                 |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 02/02/2026                                                    |
+\==================================================================================/
+*/
+Method listar() as Logical Class Consultar
+
+    Local lRetorno    := .F. as Logical
+    Local iX          := 0   as Integer
+    Local iY          := 0   as Integer
+    Local cFiltro     := "%%" as Character
+    Local cFiltCcusto := "%%" as Character
+    Local cOrder      := ""   as Character
+    Local cCcusto     := ""   as Character
+    Local aCcusto     := {}   as Array
+    Local aChaves     := {}   as Array
+
+    Local jPath      := JsonObject():New() as Json
+    Local jQuery     := JsonObject():New() as Json
+    Local oRetorno   := JsonObject():New() as Object
+    Local jJsonItem  := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    jPath  := oRest:getPathParamsRequest()
+    jQuery := oRest:getQueryRequest()
+
+    If (jPath == Nil)
+        jJsonItem['message'] := "Os parametros de ordenacao nao foram informados!"
+        jJsonItem['code']    := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    ElseIf Empty(AllTrim(jPath["orderCampo"])) .Or. Empty(AllTrim(jPath["orderTipo"]))
+        jJsonItem['message'] := "Os parametros obrigatorios (orderCampo e orderTipo) nao foram informados!"
+        jJsonItem['code']    := 2
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    Else
+
+        cOrder  := "%" + AllTrim(jPath["orderCampo"]) + " " + AllTrim(jPath["orderTipo"]) + "%"
+
+        If jQuery != Nil
+            aChaves := jQuery:GetNames()
+
+            For iX := 1 To Len(aChaves)
+                If Lower(AllTrim(aChaves[iX])) == "ccusto"
+                    cCcusto := AllTrim(jQuery[aChaves[iX]])
+                    If !Empty(cCcusto)
+                        aCcusto     := StrTokArr(cCcusto, ",")
+                        cFiltCcusto := ""
+                        cFiltCcusto := "AND SH1.H1_CCUSTO IN ("
+
+                        For iY := 1 To Len(aCcusto)
+                            cFiltCcusto += "'" + AllTrim(aCcusto[iY]) + "'"
+                            If iY < Len(aCcusto)
+                                cFiltCcusto += ","
+                            EndIf
+                        Next iY
+
+                        cFiltCcusto += ") "
+                        cFiltCcusto := "%" + cFiltCcusto + "%"
+                    EndIf
+                Else
+                    If jQuery[aChaves[iX]] == "VAZIO"
+                        jQuery[aChaves[iX]] := ""
+                    EndIf
+                    cFiltro := "%"
+                    cFiltro += "AND " + Upper(AllTrim(aChaves[iX])) + " LIKE '%" + AllTrim(jQuery[aChaves[iX]]) + "%' "
+                EndIf
+            Next iX
+        EndIf
+
+        cFiltro     += "%"
+
+        If (Select("Q_PRDHORAR") <> 0)
+            dbSelectArea("Q_PRDHORAR")
+            dbCloseArea()
+        EndIf
+
+        BeginSql Alias "Q_PRDHORAR"
+            SELECT
+                TOP 1000 ZZV.R_E_C_N_O_ AS REC,
+                ZZV.ZZV_RECURS,
+                ZZV.ZZV_OPER,
+                ZZV.ZZV_DESCRI,
+                ZZV.ZZV_PRODHR,
+                ZZV.ZZV_DIAMET,
+                ZZV.ZZV_RPM,
+                ZZV.ZZV_SAIDAS,
+                ZZV.ZZV_MMIN,
+                ZZV.ZZV_VELOCI,
+                ZZV.ZZV_FIOS,
+                ZZV.ZZV_CONST,
+                ZZV.ZZV_TITULO,
+                SH1.H1_DESCRI,
+                SH1.H1_UEP
+            FROM
+                %Table:ZZV% ZZV (NOLOCK)
+            INNER JOIN %Table:SH1% SH1 (NOLOCK)
+            ON SH1.H1_CODIGO = ZZV.ZZV_RECURS
+                AND SH1.H1_FILIAL = %xFilial:SH1% %Exp:cFiltCcusto%
+                AND SH1.D_E_L_E_T_ = ' '
+            WHERE
+                ZZV.ZZV_FILIAL = %xFilial:ZZV% %Exp:cFiltro%
+                AND ZZV.D_E_L_E_T_ = ' '
+            ORDER BY
+                %Exp:cOrder%
+        EndSql
+
+        If !Q_PRDHORAR->(Eof())
+            lRetorno := .T.
+        EndIf
+
+        If !lRetorno
+            jJsonItem['message'] := "Nenhum registro foi encontrado para os parametros informados!"
+            jJsonItem['code']    := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+            ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+        Else
+            While !Q_PRDHORAR->(Eof())
+                jJsonItem := JsonObject():New()
+
+                jJsonItem['message']    := "Registro encontrado com sucesso!"
+                jJsonItem['code']       := 200
+                jJsonItem['ZZV_RECURS'] := AllTrim(Q_PRDHORAR->ZZV_RECURS)
+                jJsonItem['ZZV_OPER']   := IIF(ValType(Q_PRDHORAR->ZZV_OPER) == "N", Transform(Q_PRDHORAR->ZZV_OPER, "@E 999"), AllTrim(Q_PRDHORAR->ZZV_OPER))
+                jJsonItem['ZZV_DESCRI'] := AllTrim(Q_PRDHORAR->ZZV_DESCRI)
+                jJsonItem['ZZV_PRODHR'] := Q_PRDHORAR->ZZV_PRODHR
+                jJsonItem['ZZV_DIAMET'] := Q_PRDHORAR->ZZV_DIAMET
+                jJsonItem['ZZV_RPM']    := Q_PRDHORAR->ZZV_RPM
+                jJsonItem['ZZV_SAIDAS'] := Q_PRDHORAR->ZZV_SAIDAS
+                jJsonItem['ZZV_MMIN']   := Q_PRDHORAR->ZZV_MMIN
+                jJsonItem['ZZV_VELOCI'] := Q_PRDHORAR->ZZV_VELOCI
+                jJsonItem['ZZV_FIOS']   := Q_PRDHORAR->ZZV_FIOS
+                jJsonItem['ZZV_CONST']  := Q_PRDHORAR->ZZV_CONST
+                jJsonItem['ZZV_TITULO'] := Q_PRDHORAR->ZZV_TITULO
+                jJsonItem['H1_DESCRI']  := AllTrim(Q_PRDHORAR->H1_DESCRI)
+                jJsonItem['H1_UEP']     := Q_PRDHORAR->H1_UEP
+                jJsonItem['REC']        := Q_PRDHORAR->REC
+
+                aAdd(oRetorno["retorno"], jJsonItem)
+
+                Q_PRDHORAR->(dbSkip())
+            EndDo
+
+            ConOut("[API PRODUCAO HORARIA] - 200 - " + AllTrim(Str(Len(oRetorno["retorno"]))) + " registro(s) retornado(s).")
+
+            Q_PRDHORAR->(dbCloseArea())
+        EndIf
+    EndIf
+
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
+
+/*
+/==================================================================================\
+|Nome              : cadastrar                                                     |
+|==================================================================================|
+|Descricao         : Inclui um ou mais registros de Producao Horaria na ZZV.       |
+|==================================================================================|
+|Autor             : Daniel Victor da Rosa - Personalitec                          |
+|==================================================================================|
+|Data de Criacao   : 03/02/2026                                                    |
+\==================================================================================/
+*/
+Method cadastrar() as Logical Class Cadastrar
+
+    Local lRetorno  := .T.  as Logical
+    Local iX        := 0    as Integer
+    Local cBody     := ""   as Character
+    Local oBody     := JsonObject():New()
+    Local oRetorno  := JsonObject():New() as Object
+    Local jJsonItem := JsonObject():New() as Json
+
+    oRetorno["retorno"] := {}
+
+    cBody := oRest:getBodyRequest()
+    oBody:fromJson(DecodeUTF8(cBody))
+
+    If Empty(cBody)
+        jJsonItem['message'] := "O body da requisicao nao foi informado!"
+        jJsonItem['code']    := 1
+        aAdd(oRetorno["retorno"], jJsonItem)
+        ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+    ELSE
+
+        For iX := 1 To Len(oBody["registros"])
+
+            lRetorno := .T.
+            jJsonItem := JsonObject():New()
+
+            If !oBody["registros"][iX]:HasProperty("fwrecurso") .Or. Empty(AllTrim(oBody["registros"][iX]["fwrecurso"])) .Or. ValType(oBody["registros"][iX]["fwrecurso"]) != "C"
+                jJsonItem['message'] := "O campo (fwrecurso) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 3
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwoperacao") .Or. Empty(AllTrim(oBody["registros"][iX]["fwoperacao"])) .Or. ValType(oBody["registros"][iX]["fwoperacao"]) != "C"
+                jJsonItem['message'] := "O campo (fwoperacao) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 4
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwdescricao") .Or. ValType(oBody["registros"][iX]["fwdescricao"]) != "C"
+                jJsonItem['message'] := "O campo (fwdescricao) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 5
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwdiametro") .Or. ValType(oBody["registros"][iX]["fwdiametro"]) != "N"
+                jJsonItem['message'] := "O campo (fwdiametro) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 6
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwrpm") .Or. ValType(oBody["registros"][iX]["fwrpm"]) != "N"
+                jJsonItem['message'] := "O campo (fwrpm) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 7
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwnumerosaidas") .Or. ValType(oBody["registros"][iX]["fwnumerosaidas"]) != "N"
+                jJsonItem['message'] := "O campo (fwnumerosaidas) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 8
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwconstante") .Or. ValType(oBody["registros"][iX]["fwconstante"]) != "N"
+                jJsonItem['message'] := "O campo (fwconstante) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 9
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwtitulo") .Or. ValType(oBody["registros"][iX]["fwtitulo"]) != "N"
+                jJsonItem['message'] := "O campo (fwtitulo) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 10
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwproducaohoraria") .Or. ValType(oBody["registros"][iX]["fwproducaohoraria"]) != "N"
+                jJsonItem['message'] := "O campo (fwproducaohoraria) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 11
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwmetrosporminuto") .Or. ValType(oBody["registros"][iX]["fwmetrosporminuto"]) != "N"
+                jJsonItem['message'] := "O campo (fwmetrosporminuto) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 12
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwvelocidade") .Or. ValType(oBody["registros"][iX]["fwvelocidade"]) != "N"
+                jJsonItem['message'] := "O campo (fwvelocidade) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 13
+                lRetorno             := .F.
+
+            ElseIf !oBody["registros"][iX]:HasProperty("fwfios") .Or. ValType(oBody["registros"][iX]["fwfios"]) != "N"
+                jJsonItem['message'] := "O campo (fwfios) nao foi informado ou esta incorreto!"
+                jJsonItem['code']    := 14
+                lRetorno             := .F.
+            EndIf
+
+            If lRetorno
+
+                ::setRecurso(oBody["registros"][iX]["fwrecurso"])
+                ::setOperacao(oBody["registros"][iX]["fwoperacao"])
+                ::setDescricao(oBody["registros"][iX]["fwdescricao"])
+                ::setDiametro(oBody["registros"][iX]["fwdiametro"])
+                ::setRpm(oBody["registros"][iX]["fwrpm"])
+                ::setNumeroSaidas(oBody["registros"][iX]["fwnumerosaidas"])
+                ::setConstante(oBody["registros"][iX]["fwconstante"])
+                ::setTitulo(oBody["registros"][iX]["fwtitulo"])
+                ::setProducaoHoraria(oBody["registros"][iX]["fwproducaohoraria"])
+                ::setMetrosPorMinuto(oBody["registros"][iX]["fwmetrosporminuto"])
+                ::setVelocidade(oBody["registros"][iX]["fwvelocidade"])
+                ::setFios(oBody["registros"][iX]["fwfios"])
+
+                ZZV->(dbSetOrder(1))
+                If ZZV->(dbSeek(AvKey(xFilial("ZZV"), "ZZV_FILIAL") + AvKey(::getRecurso(), "ZZV_RECURS") + AvKey(::getOperacao(), "ZZV_OPER")))
+                    jJsonItem['message'] := "Registro ja existe para o recurso " + ::getRecurso() + " e operacao " + ::getOperacao() + "!"
+                    jJsonItem['code']    := 15
+
+                Else
+                    RecLock("ZZV", .T.)
+                    ZZV->ZZV_FILIAL := xFilial("ZZV")
+                    ZZV->ZZV_RECURS := ::getRecurso()
+                    ZZV->ZZV_OPER   := ::getOperacao()
+                    ZZV->ZZV_DESCRI := ::getDescricao()
+                    ZZV->ZZV_DIAMET := ::getDiametro()
+                    ZZV->ZZV_RPM    := ::getRpm()
+                    ZZV->ZZV_SAIDAS := ::getNumeroSaidas()
+                    ZZV->ZZV_CONST  := ::getConstante()
+                    ZZV->ZZV_TITULO := ::getTitulo()
+                    ZZV->ZZV_PRODHR := ::getProducaoHoraria()
+                    ZZV->ZZV_MMIN   := ::getMetrosPorMinuto()
+                    ZZV->ZZV_VELOCI := ::getVelocidade()
+                    ZZV->ZZV_FIOS   := ::getFios()
+                    ZZV->(MsUnlock())
+
+                    If ZZV->(dbSeek(AvKey(xFilial("ZZV"), "ZZV_FILIAL") + AvKey(::getRecurso(), "ZZV_RECURS") + AvKey(::getOperacao(), "ZZV_OPER")))
+                        jJsonItem['message']     := "Registro incluido com sucesso!"
+                        jJsonItem['code']        := 200
+                        jJsonItem['ZZV_RECURS']  := ::getRecurso()
+                        jJsonItem['ZZV_OPER']    := ::getOperacao()
+                    Else
+                        jJsonItem['message'] := "Registro nao foi incluido!"
+                        jJsonItem['code']    := 16
+                    EndIf
+                EndIf
+            EndIf
+
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        Next iX
+
+    ENDIF
+
+    ConOut("[API PRODUCAO HORARIA] - " + AllTrim(Str(jJsonItem["code"])) + " - " + jJsonItem["message"])
+
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.

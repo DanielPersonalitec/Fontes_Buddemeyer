@@ -1,0 +1,416 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+namespace custom.EstruturaProdutos
+
+/*
++------------+--------------------------------------------------------------+
+! Classe     ! API Estrutura de produtos                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! API Estrutura de produtos                                    !
+! Data       ! 29-01-2026                                                   !
++------------+--------------------------------------------------------------+
+Fontes:
+app\desenv\ajax\ajaxprodutos.php
+app\desenv\querys\importar.php
+app\desenv\custos.php
+app\desenv\custos.php
+
+tabela:SG1010
+*/
+
+/*
+/============\
+| INTERFACES |
+\============/
+*/
+
+Interface EstruturaInterface
+Public Method New()
+
+    Public Method getCod() as Character
+    Public Method getComp() as Character
+    Public Method getDesc() as Character
+    Public Method getGrp() as Character
+    Public Method getQtd() as Numeric
+    Public Method getPerda() as Numeric
+    Public Method getCNumQuery() as Character
+
+    Public Method setCod(c)
+    Public Method setComp(c)
+    Public Method setDesc(c)
+    Public Method setGrp(c)
+    Public Method setQtd(c)
+    Public Method setPerda(c)
+    Public Method setCNumQuery(c)
+
+Public Method dados() as Logical
+EndInterface
+
+Interface ConsultarInterface
+Public Method New()
+Public Method consultar() as Logical
+EndInterface
+
+/*
+/=========\
+| CLASSES |
+\=========/
+*/
+
+Class Estrutura Implements EstruturaInterface
+
+    Private data cCod as Character
+    Private data cComp as Character
+    Private data cDesc as Character
+    Private data cGrp as Character
+    Private data nQtd as Numeric
+    Private data nPerda as Numeric
+    Private data cCNumQuery as Character
+
+    Public Method New()
+
+    Public Method getCod() as Character
+    Public Method getComp() as Character
+    Public Method getDesc() as Character
+    Public Method getGrp() as Character
+    Public Method getQtd() as Numeric
+    Public Method getPerda() as Numeric
+    Public Method getCNumQuery() as Character
+
+    Public Method setCod(c)
+    Public Method setComp(c)
+    Public Method setDesc(c)
+    Public Method setGrp(c)
+    Public Method setQtd(c)
+    Public Method setPerda(c)
+    Public Method setCNumQuery(c)
+
+    Public Method dados() as Logical
+EndClass
+
+Class Consultar From Estrutura Implements ConsultarInterface
+    Public Method New()
+
+    @Get("/api_estrutura/consultar/:cod/:comp/:cnumquery")
+    Public Method consultar() as Logical
+EndClass
+
+/*
+/=========\
+| METODOS |
+\=========/
+*/
+
+// Metodo construtor da classe Estrutura
+Method New() class Estrutura
+Return self
+
+// Metodo construtor da classe Consultar
+Method New() class Consultar
+Return self
+
+// Metodos GETs
+Method getCod() as Character class Estrutura
+Return ::cCod
+
+
+Method getComp() as Character class Estrutura
+Return ::cComp
+
+Method getDesc() as Character class Estrutura
+Return ::cDesc
+
+Method getGrp() as Character class Estrutura
+Return ::cGrp
+
+Method getQtd() as Numeric class Estrutura
+Return ::nQtd
+
+Method getPerda() as Numeric class Estrutura
+Return ::nPerda
+
+Method getCNumQuery() as Character class Estrutura
+Return ::cCNumQuery
+
+// Metodos SETs
+
+Method setCod(c) class Estrutura
+    ::cCod := AllTrim(c)
+Return
+
+Method setComp(c) class Estrutura
+    ::cComp := AllTrim(c)
+Return
+
+Method setDesc(c) class Estrutura
+    ::cDesc := AllTrim(c)
+Return
+
+Method setGrp(c) class Estrutura
+    ::cGrp := AllTrim(c)
+Return
+
+Method setQtd(c) class Estrutura
+    ::nQtd := c
+Return
+
+Method setPerda(c) class Estrutura
+    ::nPerda := c
+Return
+
+Method setCNumQuery(c) class Estrutura
+    ::cCNumQuery := AllTrim(c)
+Return
+
+/*
+/==================================================================================\
+|Nome              : dados                                                          |
+|==================================================================================|
+|Descricao         : Este metodo busca as informacoes do Estrutura                  |
+|==================================================================================|
+|Autor             : Eduardo Dalitz - Personalitec                                 |
+|==================================================================================|
+|Data de Criacao   : 29/01/2026                                                    |
+\==================================================================================/
+*/
+
+Method dados() as Logical Class Estrutura
+
+    Local cCod := ::getCod() as Character
+    Local cComp := ::getComp() as Character
+    Local cCNumQuery := ::getCNumQuery() as Character
+    Local lRetorno := .F. as Logical
+    Local _cFiltro := "" as character
+
+    // Busco o Estrutura
+    If (Select("BESTRUTURA") <> 0)
+        dbSelectArea("BESTRUTURA")
+        dbCloseArea()
+    EndIf
+
+    If cCNumQuery $ "6|8"
+        if !empty(alltrim(cValue))
+            _cFiltro += " AND (B1_COD LIKE '%" + alltrim(upper(cValue)) + "%' OR B1_DESC LIKE '%" + alltrim(upper(cValue)) + "%') "
+        endif
+
+        _cFiltro := "%" + _cFiltro + "%"
+    endif
+
+    If cCNumQuery == "1"
+        BeginSql alias 'BESTRUTURA'
+            SELECT DISTINCT SG1_COMPONENTE.G1_COD, B1_DESC FROM  %Table:SG1% AS SG1_TECIDO
+            INNER JOIN %Table:SG1% SG1_COMPONENTE ON SG1_COMPONENTE.%notDel% AND SG1_COMPONENTE.G1_COD = SG1_TECIDO.G1_COD
+            INNER JOIN %Table:SG1% SG1_PA ON SG1_PA.%notDel% AND SG1_PA.G1_COMP = SG1_COMPONENTE.G1_COD
+            INNER JOIN %Table:SB1% SB1 (NOLOCK) ON B1_COD = SG1_COMPONENTE.G1_COD
+            WHERE SG1_TECIDO.%notDel%
+            AND SG1_TECIDO.G1_COMP = %Exp:cComp%
+            AND SG1_PA.G1_COD = %Exp:cCod%
+        EndSql
+    elseif cCNumQuery == "2"
+        BeginSql alias 'BESTRUTURA'
+            SELECT G1_QUANT FROM %Table:SG1%
+            WHERE %Table:SG1%.%notDel%
+            AND (G1_FILIAL = '01' OR G1_FILIAL = '')
+            AND G1_COD = %Exp:cCod%
+            AND G1_COMP = %Exp:cComp%
+        EndSql
+    elseif cCNumQuery == "3"
+        BeginSql alias 'BESTRUTURA'
+            SELECT G1_COD FROM %Table:SG1% (NOLOCK)
+            WHERE (G1_FILIAL = '01' OR G1_FILIAL = '')
+            AND %Table:SG1%.%notDel%
+            AND G1_COD = %Exp:cCod%
+        EndSql
+    elseif cCNumQuery == "4"
+        BeginSql alias 'BESTRUTURA'
+            SELECT G1_COD FROM %Table:SG1% (NOLOCK)
+            WHERE %Table:SG1%.%notDel%
+            AND G1_COD = %Exp:cCod%
+        EndSql
+    elseif cCNumQuery == "5"
+        BeginSql alias 'BESTRUTURA'
+            SELECT B1_DESC,
+                CASE B1_GRUPO
+                        WHEN '0104' THEN 'TECIDO'
+                        ELSE 'ITEM'
+                END AS TIPO, G1_QUANT, G1_PERDA, G1_COMP
+                FROM %Table:SG1%
+                INNER JOIN %Table:SB1% (NOLOCK) ON B1_COD = G1_COMP
+                WHERE %Table:SG1%.%notDel%
+                AND %Table:SB1%.%notDel%
+                AND B1_FILIAL = ''
+            AND (G1_FILIAL = '01' OR G1_FILIAL = '')
+            AND G1_COD = %Exp:cCod%
+        EndSql
+
+    elseif cCNumQuery == "6"
+        BeginSql alias 'BESTRUTURA'
+            SELECT TOP 500 B1_COD, B1_DESC, G1_QUANT, G1_PERDA FROM SG1010
+            INNER JOIN %Table:SB1% (NOLOCK) ON G1_COMP = B1_COD
+            WHERE %Table:SB1%.%notDel% AND %Table:SG1%.%notDel%
+            AND B1_FILIAL = '' AND (G1_FILIAL = '01' OR G1_FILIAL = '')
+            %exp:_cFiltro%
+        EndSql
+    elseif cCNumQuery == "7"
+        BeginSql alias 'BESTRUTURA'
+            SELECT B1_DESC,
+            CASE B1_GRUPO
+                    WHEN '0104' THEN 'TECIDO'
+                    ELSE 'ITEM'
+            END AS TIPO, G1_QUANT, G1_PERDA, G1_COMP
+            FROM %Table:SG1%
+            INNER JOIN %Table:SB1% (NOLOCK) ON B1_COD = G1_COMP
+            WHERE %Table:SG1%.%notDel% AND %Table:SB1%.%notDel%
+            AND B1_FILIAL = '' AND (G1_FILIAL = '01' OR G1_FILIAL = '') AND G1_COD = %Exp:cCod%
+        EndSql
+    elseif cCNumQuery == "8"
+        BeginSql alias 'BESTRUTURA'
+            SELECT TOP 500 B1_COD, B1_DESC, G1_QUANT, G1_PERDA FROM %Table:SG1%
+            INNER JOIN %Table:SB1% (NOLOCK) ON G1_COMP = B1_COD
+            WHERE %Table:SB1%.%notDel% AND %Table:SG1%.%notDel%
+            AND B1_FILIAL = '' AND (G1_FILIAL = '01' OR G1_FILIAL = '')
+            %exp:_cFiltro%
+        EndSql
+    endif
+
+    // Se existir o Recurso
+    If !BESTRUTURA->(Eof())
+        lRetorno := .T.
+    EndIf
+
+    While BESTRUTURA->(!eof())
+        jJsonItem := JsonObject():New()
+
+        if cCNumQuery == "1"
+            ::setCod(BESTRUTURA->G1_COD)
+            ::setDesc(BESTRUTURA->B1_DESC)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['codigo'] := ::getCod()
+            jJsonItem['descricao'] := ::getDesc()
+
+        elseif cCNumQuery == "2"
+            ::setQtd(BESTRUTURA->G1_QUANT)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['quantidade'] := ::getQtd()
+
+        elseif cCNumQuery $ "3|4"
+            ::setQtd(BESTRUTURA->G1_COD)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['codigo'] := ::getCod()
+
+        elseif cCNumQuery $ "5|7"
+            ::setDesc(BESTRUTURA->B1_DESC)
+            ::setGrp(BESTRUTURA->TIPO)
+            ::setQtd(BESTRUTURA->G1_QUANT)
+            ::setPerda(BESTRUTURA->G1_PERDA)
+            ::setComp(BESTRUTURA->G1_COMP)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['descricao'] := ::getDesc()
+            jJsonItem['grupo'] := ::getGrp()
+            jJsonItem['quantidade'] := ::getQtd()
+            jJsonItem['perda'] := ::getPerda()
+            jJsonItem['componente'] := ::getComp()
+        elseif cCNumQuery $ "6|8"
+            ::setCod(BESTRUTURA->B1_COD)
+            ::setDesc(BESTRUTURA->B1_DESC)
+            ::setQtd(BESTRUTURA->G1_QUANT)
+            ::setPerda(BESTRUTURA->G1_PERDA)
+            jJsonItem['message'] := "Registro encontrado."
+            jJsonItem['code'] := 200
+            jJsonItem['codigo'] := ::getCod()
+            jJsonItem['descricao'] := ::getDesc()
+            jJsonItem['quantidade'] := ::getQtd()
+            jJsonItem['perda'] := ::getPerda()
+        endif
+
+        aAdd(oRetorno["retorno"], jJsonItem)
+
+        BESTRUTURA->(dbskip())
+
+    enddo
+
+    BESTRUTURA->(DbCloseArea())
+
+Return lRetorno
+
+/*
++------------+--------------------------------------------------------------+
+! Funcao     ! consultar                                                    !
+! Autor      ! Eduardo Dalitz - Personalitec                                !
+! Descricao  ! Realiza a busca de Estruturas                                !
+! Data       ! 29-01-2026                                                   !
++------------+--------------------------------------------------------------+
+*/
+Method consultar() as Logical class Consultar
+
+    Local jPathParams := JsonObject():New() as Json
+    Local lRetorno := .F. as Logical
+    //Local cCNumQuery := ::getCNumQuery() as Character
+
+    Private cFilH1 := ""  as character
+    Public oRetorno := JsonObject():New() as Object
+    Public jJsonItem := JsonObject():New() as Json
+    Private cValue := ""  as character
+    _Super:New() // construtor da classe pai
+
+    oRetorno["retorno"] := {}
+
+    jPathParams := oRest:getPathParamsRequest()
+    jQueryString:= oRest:getQueryRequest()
+
+    cValue := Iif(!Empty(jQueryString[ 'value']),jQueryString[ 'value' ],"")
+
+    // Valida se foram passados os parametros
+    If jPathParams != Nil
+        // Valida campos obrigatórios
+        If Empty(AllTrim(jPathParams["cod"])) .AND. AllTrim(jPathParams["cnumquery"]) $ "1|2|3|4|5|7"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cod"
+            jJsonItem['code'] := 2
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        ELSEIF EMPTY(AllTrim(jPathParams["comp"])) .AND. AllTrim(jPathParams["cnumquery"]) $ "1|2"
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: comp"
+            jJsonItem['code'] := 3
+            aAdd(oRetorno["retorno"], jJsonItem)
+
+        ELSEIF EMPTY(AllTrim(jPathParams["cnumquery"]))
+            jJsonItem['message'] := "Favor Preencher o parametro obrigatorio: cnumquery"
+            jJsonItem['code'] := 4
+            aAdd(oRetorno["retorno"], jJsonItem)
+        Else
+            // Recebe as informações
+
+            ::setCod(jPathParams["cod"])
+            ::setComp(jPathParams["comp"])
+            ::setCNumQuery(jPathParams["cnumquery"])
+
+            lRetorno := ::dados()
+
+            If !lRetorno
+                jJsonItem['message'] := "Nenhum registro foi encontrado."
+                jJsonItem['code'] := 1
+                aAdd(oRetorno["retorno"], jJsonItem)
+            EndIf
+
+        EndIf
+    Else
+        jJsonItem['message'] := "O json enviado esta incorreto, favor revisar."
+        jJsonItem['code'] := 5
+        aAdd(oRetorno["retorno"], jJsonItem)
+    EndIf
+
+    // Adiciona resposta da API
+    BEGIN SEQUENCE
+        oRest:setResponse(EncodeUtf8(oRetorno:toJson()))
+        oRest:setStatusCode(200)
+        RECOVER
+        oRest:setResponse(EncodeUtf8("{error:Internal Server Error}"))
+        oRest:setStatusCode(500)
+    END SEQUENCE
+
+Return .T.
